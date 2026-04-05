@@ -1,0 +1,33 @@
+# Sofucor Ceiling Fan — RF Device Profile
+# Encoding: OOK Pulse Distance (fixed HIGH pulse, variable LOW gap)
+# See PROTOCOL.md for full decoding notes
+
+frequency_mhz: 315.4
+encoding: OOK_PDM  # Pulse Distance Modulation
+
+timing:
+  sync_us: 8000       # sync HIGH pulse at start of each repetition
+  sync_gap_us: 670    # LOW gap between sync and first data bit (tune if fan doesn't respond)
+  pulse_us: 400       # carrier-ON duration, same for all bits
+  zero_gap_us: 670    # LOW gap after pulse = bit 0
+  one_gap_us: 1800    # LOW gap after pulse = bit 1
+  repeat_count: 20    # firmware sends 20×; real remote sends 36–41×
+
+# Packet: [address 16 bits][command 16 bits] = 32 bits total
+#   address = bits 0–15, unique per remote/fan pair
+#   command = bits 16–31, same across all units of this type
+
+units:
+  bedroom:
+    address: "1000110011110110"    # remote 1 — verified
+    fan_number: 1
+  living_room:
+    address: "1111000100111011"    # remote 2 — verified
+    fan_number: 2
+
+commands:                           # 16-bit command fields (appended to address at send time)
+  light:  "1100000000111111"        # verified: remote 1
+  "off":  "0100000010111111"        # verified: remotes 1 and 2 (quoted: bare 'off' is a YAML boolean)
+  speed1: "0001000011101111"        # verified: remotes 1 and 2
+  speed2: "1001000001101111"        # verified: remote 1 (derived for remote 2)
+  speed3: "0100100010110111"        # verified: remote 1 (derived for remote 2)

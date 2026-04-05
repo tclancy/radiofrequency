@@ -15,9 +15,9 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 | --- | --- |
 | RTL-SDR | Nooelec NESDR Mini 2+ (RTL2838UHIDIR, SN: 00000001) |
 | Microcontroller | HiLetgo ESP8266 NodeMCU |
-| RF transmitter | HiLetgo 315MHz TX/RX module (MX-FS-03V / MX-05V) |
+| RF transmitter | HiLetgo 433MHz TX/RX module (MX-FS-03V / MX-05V) |
 | Jumper wires | ELEGOO 120pc dupont kit — use female-to-female for NodeMCU↔TX module |
-| Target device | Two Sofucor ceiling fans (model unknown, likely 315MHz remote) |
+| Target device | Two Sofucor ceiling fans (confirmed 433.935 MHz remote) |
 
 ## Software
 
@@ -27,21 +27,43 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 - PlatformIO (VSCode extension) — NodeMCU firmware deployment
 - Python (this repo) — generic control CLI
 
-## Project Status (as of 2026-02-17)
+## Project Status (as of 2026-03-14)
 
 - RTL-SDR confirmed working (`rtl_test` shows device, tuner recognized)
 - Gqrx installed and device recognized
-- Promising activity spotted around 315.4 MHz — not yet confirmed
-- Gain was too low during first scan (~-6 dB); needs to be 35-40 dB to see signals clearly
-- TX module and dupont wires on order, not yet arrived
+- **Frequency confirmed: 433.935 MHz** (both remotes, all buttons)
+- 315 MHz showed no signal; 433 MHz band is correct (common for import fans)
+- Gain at ~38 dB, AGC off works well
+- TX module and dupont wires in hand
 
 ## Next Session Starting Point
 
-1. Open Gqrx, select Realtek RTL2838UHIDIR SN: 00000001
-2. Set gain to ~35-40 dB
-3. Tune to 315.400 MHz
-4. Press and hold a fan remote button for 1 second — watch for a bright burst in the waterfall
-5. Once frequency confirmed, use `rtl_fm` to capture WAV files for each button
+1. ~~Capture WAV files with `rtl_fm` for each button on both remotes~~ ✓ (7 captures in `captures/`)
+2. Decode the OOK pulse timings — try `rtl_433` auto-decode first, fall back to Audacity/URH
+3. See `docs/plans/2026-03-08-fan-control-phase1.md` for full plan
+
+## Useful Tools for Signal Analysis
+
+- **Universal Radio Hacker (URH)** — `brew install urh` — purpose-built for OOK signal analysis, auto-detects pulse widths and bit patterns. Try this before squinting at Audacity.
+- **rtl_433** — `brew install rtl_433` — auto-decodes hundreds of OOK protocols. May already know the Sofucor protocol. See auto-decode investigation notes below.
+- **Audacity** — manual fallback for measuring pulse timings by hand
+
+## rtl_433 Auto-Decode Notes
+
+GitHub issue #3345 documents the **exact Sofucor FT0317R protocol**:
+- OOK_PWM, short pulse ~302 µs, long pulse ~906 µs, period 1212 µs
+- 32-bit payload: 16-bit button ID + 16-bit remote ID
+- 5 repeats per press
+- Flex decoder: `rtl_433 -X "n=Sofucor,m=OOK_PWM,s=302,l=906,g=1000,r=5000"`
+- WAV files may need conversion to `.cu8` format before rtl_433 can read them
+- Also try the triq.org/pdv/ browser visualizer for .ook pulse files
+
+## Reading / Learning Resources
+
+- *Make: Electronics* (3rd ed) — Ch 1-2 for signal/oscillation fundamentals
+- rtl_433 wiki — OOK signal analysis examples with visuals
+- Instructables guide linked in README
+- GitHub issue merbanan/rtl_433#3345 — Sofucor-specific protocol analysis
 
 ## Key Architecture Decisions
 
