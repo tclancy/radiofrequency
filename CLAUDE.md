@@ -27,7 +27,7 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 - PlatformIO (VSCode extension) — NodeMCU firmware deployment
 - Python (this repo) — generic control CLI
 
-## Project Status (as of 2026-03-14)
+## Project Status (as of 2026-04-05)
 
 - RTL-SDR confirmed working (`rtl_test` shows device, tuner recognized)
 - Gqrx installed and device recognized
@@ -35,12 +35,18 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 - 315 MHz showed no signal; 433 MHz band is correct (common for import fans)
 - Gain at ~38 dB, AGC off works well
 - TX module and dupont wires in hand
+- **Protocol fully decoded** — see `PROTOCOL.md` and `devices/sofucor_fan.yaml`
+- **Firmware, CLI, and tests written** — see `firmware/`, `cli.py`, `src/`, `tests/`
+- Interactive signal explorer built (`signal_explorer.py`) — Streamlit app for understanding OOK waveforms
 
 ## Next Session Starting Point
 
 1. ~~Capture WAV files with `rtl_fm` for each button on both remotes~~ ✓ (7 captures in `captures/`)
-2. Decode the OOK pulse timings — try `rtl_433` auto-decode first, fall back to Audacity/URH
-3. See `docs/plans/2026-03-08-fan-control-phase1.md` for full plan
+2. ~~Decode the OOK pulse timings~~ ✓ (see `PROTOCOL.md`)
+3. **Wire up the NodeMCU + TX module** (3 wires: VCC→VIN, GND→GND, DATA→D1)
+4. Flash the firmware via PlatformIO (`firmware/`)
+5. Test replay — does the fan respond?
+6. See `docs/plans/2026-03-08-fan-control-phase1.md` for full plan
 
 ## Useful Tools for Signal Analysis
 
