@@ -3,8 +3,8 @@
 #include <ESP8266WiFi.h>
 
 // ─── USER CONFIG ──────────────────────────────────────────────────────────────
-const char *WIFI_SSID = "your_ssid";      // <── change before flashing
-const char *WIFI_PASS = "your_password";  // <── change before flashing
+const char *WIFI_SSID = "22 Parsons";
+const char *WIFI_PASS = "password";
 const int   TX_PIN    = D1;               // DATA pin → HiLetgo MX-FS-03V TX module
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -96,13 +96,29 @@ void setup() {
     pinMode(TX_PIN, OUTPUT);
     digitalWrite(TX_PIN, LOW);
 
+    WiFi.mode(WIFI_STA);              // station mode only (no AP)
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    Serial.print("\nConnecting to WiFi");
+    Serial.printf("\nConnecting to WiFi SSID: [%s]\n", WIFI_SSID);
+
+    const unsigned long WIFI_TIMEOUT_MS = 30000;  // 30 s then give up
+    unsigned long start = millis();
     while (WiFi.status() != WL_CONNECTED) {
+        ESP.wdtFeed();                 // pet the watchdog so it doesn't bite
         delay(500);
         Serial.print(".");
+        if (millis() - start > WIFI_TIMEOUT_MS) {
+            Serial.println("\n*** WiFi connection timed out after 30 s ***");
+            Serial.printf("WiFi.status() = %d\n", WiFi.status());
+            Serial.println("Check SSID/password. Retrying in 5 s...");
+            delay(5000);
+            ESP.wdtFeed();
+            WiFi.disconnect();
+            delay(100);
+            WiFi.begin(WIFI_SSID, WIFI_PASS);
+            start = millis();          // reset the timer for another attempt
+        }
     }
-    Serial.printf("\nIP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.printf("\nConnected! IP: %s\n", WiFi.localIP().toString().c_str());
 
     // Fan 1 (bedroom)
     server.on("/fan/1/light",  HTTP_GET, h1Light);

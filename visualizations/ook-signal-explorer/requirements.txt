@@ -1,0 +1,4 @@
+streamlit>=1.44
+matplotlib>=3.10
+numpy>=1.26
+pyyaml>=6.0
