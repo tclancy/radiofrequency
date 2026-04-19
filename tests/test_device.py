@@ -1,6 +1,6 @@
 import pytest
 
-from src.device import DeviceProfile, build_packet
+from src.device import DeviceProfile, build_packet, build_transmit_payload
 
 PROFILE_PATH = "devices/sofa_king_fan.yaml"
 
@@ -96,3 +96,23 @@ def test_units_have_fan_number(profile):
     for name, unit in profile.units.items():
         assert "fan_number" in unit, f"unit '{name}' missing fan_number"
         assert isinstance(unit["fan_number"], int)
+
+
+# --- build_transmit_payload ---
+
+def test_build_transmit_payload_shape(profile):
+    payload = build_transmit_payload(profile, bits="01" * 16)
+    assert payload["bits"] == "01" * 16
+    assert set(payload["timing"].keys()) == {
+        "sync_us", "sync_gap_us", "pulse_us",
+        "zero_gap_us", "one_gap_us", "repeat_count",
+    }
+    assert payload["timing"]["pulse_us"] == 400
+    assert payload["timing"]["repeat_count"] == 20
+
+
+def test_build_transmit_payload_rejects_bad_bits(profile):
+    with pytest.raises(ValueError):
+        build_transmit_payload(profile, bits="")
+    with pytest.raises(ValueError):
+        build_transmit_payload(profile, bits="0102")
