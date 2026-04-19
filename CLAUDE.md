@@ -35,7 +35,7 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 - 315 MHz showed no signal; 433 MHz band is correct (common for import fans)
 - Gain at ~38 dB, AGC off works well
 - TX module and dupont wires in hand
-- **Protocol fully decoded** — see `PROTOCOL.md` and `devices/sofucor_fan.yaml`
+- **Protocol fully decoded** — see `PROTOCOL.md` and `devices/sofa_king_fan.yaml`
 - **Firmware, CLI, and tests written** — see `firmware/`, `cli.py`, `src/`, `tests/`
 - Interactive signal explorer built (`signal_explorer.py`) — Streamlit app for understanding OOK waveforms
 
@@ -88,7 +88,7 @@ There are two Sofucor fans, each with its own remote. RF remotes almost always e
 The YAML schema must account for this. Proposed approach: a device *type* file defines the protocol and commands; each physical unit adds only its unique address. Example:
 
 ```yaml
-# devices/sofucor_fan.yaml
+# devices/sofa_king_fan.yaml
 frequency_mhz: 315
 encoding: OOK
 timing:

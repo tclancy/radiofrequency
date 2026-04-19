@@ -2,7 +2,7 @@ import pytest
 
 from src.device import DeviceProfile, build_packet
 
-PROFILE_PATH = "devices/sofucor_fan.yaml"
+PROFILE_PATH = "devices/sofa_king_fan.yaml"
 
 
 @pytest.fixture

@@ -19,7 +19,7 @@ st.set_page_config(page_title="OOK Signal Explorer", layout="wide")
 # ---------------------------------------------------------------------------
 # Load device profile
 # ---------------------------------------------------------------------------
-DEVICE_FILE = Path(__file__).parent / "devices" / "sofucor_fan.yaml"
+DEVICE_FILE = Path(__file__).parent / "devices" / "sofa_king_fan.yaml"
 
 
 @st.cache_data
