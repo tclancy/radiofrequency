@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 
@@ -72,7 +73,111 @@ void transmit(const char *addr, const char *cmd) {
     }
 }
 
+// Generic transmit: toggle TX_PIN per an explicit timing spec.
+// Used by POST /transmit so the Mac can drive arbitrary bit patterns
+// without the firmware knowing anything about the device protocol.
+void transmitGeneric(const char *bits,
+                     uint32_t sync_us, uint32_t sync_gap_us,
+                     uint32_t pulse_us, uint32_t zero_gap_us,
+                     uint32_t one_gap_us, int repeat_count) {
+    for (int r = 0; r < repeat_count; r++) {
+        digitalWrite(TX_PIN, HIGH);
+        delayMicroseconds(sync_us);
+        digitalWrite(TX_PIN, LOW);
+        delayMicroseconds(sync_gap_us);
+
+        for (const char *p = bits; *p; p++) {
+            digitalWrite(TX_PIN, HIGH);
+            delayMicroseconds(pulse_us);
+            digitalWrite(TX_PIN, LOW);
+            delayMicroseconds(*p == '1' ? one_gap_us : zero_gap_us);
+        }
+
+        ESP.wdtFeed();
+    }
+}
+
 // ─── HTTP HANDLERS ───────────────────────────────────────────────────────────
+// POST /transmit — body is JSON:
+//   {"bits": "010...", "timing": {"sync_us":N, "sync_gap_us":N,
+//    "pulse_us":N, "zero_gap_us":N, "one_gap_us":N, "repeat_count":N}}
+void handleTransmit() {
+    if (server.method() != HTTP_POST) {
+        server.send(405, "text/plain", "method not allowed\n");
+        return;
+    }
+    if (!server.hasArg("plain")) {
+        server.send(400, "text/plain", "missing body\n");
+        return;
+    }
+
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, server.arg("plain"));
+    if (err) {
+        server.send(400, "text/plain", String("bad json: ") + err.c_str() + "\n");
+        return;
+    }
+
+    const char *bits = doc["bits"] | (const char *)nullptr;
+    if (!bits) {
+        server.send(400, "text/plain", "missing 'bits'\n");
+        return;
+    }
+    size_t bitlen = strlen(bits);
+    if (bitlen == 0 || bitlen > 128) {
+        server.send(400, "text/plain", "bits must be 1..128 chars\n");
+        return;
+    }
+    for (size_t i = 0; i < bitlen; i++) {
+        if (bits[i] != '0' && bits[i] != '1') {
+            server.send(400, "text/plain", "bits must contain only 0 and 1\n");
+            return;
+        }
+    }
+
+    JsonObject t = doc["timing"].as<JsonObject>();
+    if (t.isNull()) {
+        server.send(400, "text/plain", "missing 'timing' object\n");
+        return;
+    }
+
+    const char *required[] = {"sync_us", "sync_gap_us", "pulse_us",
+                              "zero_gap_us", "one_gap_us", "repeat_count"};
+    for (const char *k : required) {
+        if (!t.containsKey(k)) {
+            String msg = String("missing timing.") + k + "\n";
+            server.send(400, "text/plain", msg);
+            return;
+        }
+    }
+
+    uint32_t sync_us      = t["sync_us"];
+    uint32_t sync_gap_us  = t["sync_gap_us"];
+    uint32_t pulse_us     = t["pulse_us"];
+    uint32_t zero_gap_us  = t["zero_gap_us"];
+    uint32_t one_gap_us   = t["one_gap_us"];
+    int      repeat_count = t["repeat_count"];
+
+    // Sanity clamps. Anything outside these is almost certainly a typo/bug
+    // and we'd rather fail loudly than sit in delayMicroseconds() forever.
+    auto badUs = [](uint32_t v) { return v == 0 || v > 100000; };
+    if (badUs(sync_us) || badUs(sync_gap_us) || badUs(pulse_us) ||
+        badUs(zero_gap_us) || badUs(one_gap_us)) {
+        server.send(400, "text/plain", "timing microsecond values must be 1..100000\n");
+        return;
+    }
+    if (repeat_count < 1 || repeat_count > 100) {
+        server.send(400, "text/plain", "repeat_count must be 1..100\n");
+        return;
+    }
+
+    transmitGeneric(bits, sync_us, sync_gap_us,
+                    pulse_us, zero_gap_us, one_gap_us, repeat_count);
+
+    String reply = String("OK ") + bitlen + " bits x " + repeat_count + " reps\n";
+    server.send(200, "text/plain", reply);
+}
+
 void sendOK()  { server.send(200, "text/plain", "OK\n"); }
 void send404() { server.send(404, "text/plain", "Not Found\n"); }
 
@@ -134,10 +239,15 @@ void setup() {
     server.on("/fan/2/speed2", HTTP_GET, h2Speed2);
     server.on("/fan/2/speed3", HTTP_GET, h2Speed3);
 
+    // Generic endpoint — preferred path, used by cli.py send & raw
+    server.on("/transmit", HTTP_POST, handleTransmit);
+
     server.onNotFound(send404);
     server.begin();
     Serial.println("HTTP server ready");
-    Serial.println("Endpoints: /fan/{1,2}/{light,off,speed1,speed2,speed3}");
+    Serial.println("Endpoints:");
+    Serial.println("  POST /transmit                (generic bits + timing)");
+    Serial.println("  GET  /fan/{1,2}/{light,off,speed1,speed2,speed3}  (legacy hardcoded)");
 }
 
 // ─── LOOP ────────────────────────────────────────────────────────────────────
