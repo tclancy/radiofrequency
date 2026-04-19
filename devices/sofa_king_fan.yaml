@@ -2,7 +2,7 @@
 # Encoding: OOK Pulse Distance (fixed HIGH pulse, variable LOW gap)
 # See PROTOCOL.md for full decoding notes
 
-frequency_mhz: 315.4
+frequency_mhz: 433.935
 encoding: OOK_PDM  # Pulse Distance Modulation
 
 timing:
@@ -18,10 +18,12 @@ timing:
 #   command = bits 16–31, same across all units of this type
 
 units:
-  bedroom:
+  # Both fans live in the living room; names reflect which is nearer the
+  # main room vs the staircase landing.
+  main:
     address: "1000110011110110"    # remote 1 — verified
     fan_number: 1
-  living_room:
+  stairs:
     address: "1111000100111011"    # remote 2 — verified
     fan_number: 2
 

@@ -280,7 +280,7 @@ with tab2:
     > **The rule:** In Audacity, you're measuring the **noisy bursts** (the gaps), not the
     > quiet parts. Short burst → 0. Long burst → 1. The quiet flat sections *between*
     > the bursts are the actual carrier pulses — that's the remote yelling "I'M HERE" at
-    > 315.4 MHz.
+    > 433.935 MHz.
 
     Here's the text version from last session:
     ```

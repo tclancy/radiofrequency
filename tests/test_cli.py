@@ -25,7 +25,7 @@ def test_send_posts_to_transmit_endpoint(runner):
 
         result = runner.invoke(
             cli,
-            ["send", "sofa_king_fan", "bedroom", "light", "--host", "1.2.3.4"],
+            ["send", "sofa_king_fan", "main", "light", "--host", "1.2.3.4"],
         )
 
     assert result.exit_code == 0, result.output

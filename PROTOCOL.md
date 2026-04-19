@@ -4,7 +4,7 @@
 
 | Parameter | Value |
 |-----------|-------|
-| Frequency | 315.4 MHz |
+| Frequency | 433.935 MHz |
 | Modulation | OOK (On-Off Keying), Pulse Distance |
 | Packet length | 32 bits |
 | Repetitions | 36–41 per button press (remote); 20 in firmware |
@@ -39,10 +39,13 @@ before the first data bit uses the zero_gap duration as a default (may need tuni
 
 ## Decoded Addresses
 
-| Fan | Location | Address (16 bits) |
-|-----|----------|-------------------|
-| 1 | Bedroom | `1000110011110110` |
-| 2 | Living room | `1111000100111011` |
+Both fans physically live in the living room; names distinguish which one
+is nearer the main room vs the staircase landing.
+
+| Fan | Name | Address (16 bits) |
+|-----|------|-------------------|
+| 1 | main | `1000110011110110` |
+| 2 | stairs | `1111000100111011` |
 
 ## Decoded Commands
 
@@ -56,7 +59,7 @@ before the first data bit uses the zero_gap duration as a default (may need tuni
 
 ## Full 32-Bit Codes
 
-### Remote 1 — Bedroom Fan
+### Remote 1 — Main Fan
 
 | Button | Full code | Verified |
 |--------|-----------|----------|
@@ -66,7 +69,7 @@ before the first data bit uses the zero_gap duration as a default (may need tuni
 | speed2 | `10001100111101101001000001101111` | ✓ |
 | speed3 | `10001100111101100100100010110111` | ✓ |
 
-### Remote 2 — Living Room Fan
+### Remote 2 — Stairs Fan
 
 | Button | Full code | Verified |
 |--------|-----------|----------|

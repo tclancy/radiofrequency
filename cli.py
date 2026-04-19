@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control RF devices via NodeMCU HTTP API.
 
-    python cli.py send sofa_king_fan bedroom light --host 192.168.1.42
+    python cli.py send sofa_king_fan main light --host 192.168.1.42
     python cli.py raw 10001100111101101100000000111111 \\
         --device sofa_king_fan --host 192.168.1.42
 """
@@ -48,7 +48,7 @@ def cli() -> None:
 @click.option("--host", default="nodemcu.local", show_default=True)
 @click.option("--port", default=80, show_default=True)
 def send(device: str, unit: str, command: str, host: str, port: int) -> None:
-    """Send a named command from a device profile (e.g. bedroom light)."""
+    """Send a named command from a device profile (e.g. main light)."""
     profile = _load_profile(device)
 
     if unit not in profile.units:

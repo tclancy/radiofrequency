@@ -27,8 +27,8 @@ const int      REPEAT_N   =   20;  // repetitions per button press (remote uses 
 // ──────────────────────────────────────────────────────────────────────────────
 
 // ─── FAN ADDRESSES (bits 0–15, unique per remote/fan pair) ───────────────────
-const char *ADDR_FAN1 = "1000110011110110";  // bedroom
-const char *ADDR_FAN2 = "1111000100111011";  // living room
+const char *ADDR_FAN1 = "1000110011110110";  // main (remote 1)
+const char *ADDR_FAN2 = "1111000100111011";  // stairs (remote 2)
 
 // ─── COMMAND CODES (bits 16–31, shared across all fan units) ─────────────────
 const char *CMD_LIGHT  = "1100000000111111";  // verified: fan 1
@@ -181,14 +181,14 @@ void handleTransmit() {
 void sendOK()  { server.send(200, "text/plain", "OK\n"); }
 void send404() { server.send(404, "text/plain", "Not Found\n"); }
 
-// Fan 1 — bedroom
+// Fan 1 — main
 void h1Light()  { transmit(ADDR_FAN1, CMD_LIGHT);  sendOK(); }
 void h1Off()    { transmit(ADDR_FAN1, CMD_OFF);    sendOK(); }
 void h1Speed1() { transmit(ADDR_FAN1, CMD_SPEED1); sendOK(); }
 void h1Speed2() { transmit(ADDR_FAN1, CMD_SPEED2); sendOK(); }
 void h1Speed3() { transmit(ADDR_FAN1, CMD_SPEED3); sendOK(); }
 
-// Fan 2 — living room
+// Fan 2 — stairs
 void h2Light()  { transmit(ADDR_FAN2, CMD_LIGHT);  sendOK(); }
 void h2Off()    { transmit(ADDR_FAN2, CMD_OFF);    sendOK(); }
 void h2Speed1() { transmit(ADDR_FAN2, CMD_SPEED1); sendOK(); }
@@ -225,14 +225,14 @@ void setup() {
     }
     Serial.printf("\nConnected! IP: %s\n", WiFi.localIP().toString().c_str());
 
-    // Fan 1 (bedroom)
+    // Fan 1 (main)
     server.on("/fan/1/light",  HTTP_GET, h1Light);
     server.on("/fan/1/off",    HTTP_GET, h1Off);
     server.on("/fan/1/speed1", HTTP_GET, h1Speed1);
     server.on("/fan/1/speed2", HTTP_GET, h1Speed2);
     server.on("/fan/1/speed3", HTTP_GET, h1Speed3);
 
-    // Fan 2 (living room)
+    // Fan 2 (stairs)
     server.on("/fan/2/light",  HTTP_GET, h2Light);
     server.on("/fan/2/off",    HTTP_GET, h2Off);
     server.on("/fan/2/speed1", HTTP_GET, h2Speed1);
