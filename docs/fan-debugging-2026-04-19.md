@@ -1,5 +1,25 @@
 # Fan Control Debugging Session — 2026-04-19
 
+## RESOLVED 2026-05-09
+
+The fix was hypothesis #2: our hand-decoded pulse/gap timings were
+systematically off, especially `sync_gap_us` (we had 670 µs, the real
+remote uses ~4500 µs). Recapturing the remote with `rtl_fm -M am`
+gave a clean envelope, measurement was unambiguous, YAML updated,
+fans now respond to all five commands on both units. The "derived"
+stairs commands turned out to be correct — the address/command split
+was right all along.
+
+Original hypotheses #1 (TX wiring), #3 (ESP8266 jitter), #4 (bit
+pattern errors) were all wrong; nothing was fundamentally broken,
+just that decoding from a WBFM-demod recording loses too much
+precision to read pulse widths off by eye. AM demod for the win.
+
+The notes below preserve the debugging history.
+
+---
+
+
 Checkpoint for next-session-Tom. Context: we built the generic `/transmit`
 firmware + CLI today, tried to drive the fans, and discovered that while
 transmission happens, the fans don't respond. Investigation narrowed the

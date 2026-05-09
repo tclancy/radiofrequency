@@ -34,7 +34,7 @@ def test_send_posts_to_transmit_endpoint(runner):
     assert url == "http://1.2.3.4:80/transmit"
     payload = mock_post.call_args.kwargs["json"]
     assert payload["bits"] == "10001100111101101100000000111111"
-    assert payload["timing"]["pulse_us"] == 400
+    assert payload["timing"]["pulse_us"] == 560
 
 
 def test_send_rejects_unknown_unit(runner):
@@ -66,7 +66,7 @@ def test_raw_posts_arbitrary_bits(runner):
     assert mock_post.call_count == 1
     payload = mock_post.call_args.kwargs["json"]
     assert payload["bits"] == "01" * 16
-    assert payload["timing"]["pulse_us"] == 400
+    assert payload["timing"]["pulse_us"] == 560
 
 
 def test_raw_rejects_non_binary(runner):

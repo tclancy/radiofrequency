@@ -8,10 +8,15 @@
 | Modulation | OOK (On-Off Keying), Pulse Distance |
 | Packet length | 32 bits |
 | Repetitions | 36–41 per button press (remote); 20 in firmware |
-| Sync pulse | ~8 ms HIGH (between/before each repetition) |
-| Bit pulse (HIGH) | ~400 µs (fixed for all bits) |
-| Bit 0 gap (LOW) | ~670 µs |
-| Bit 1 gap (LOW) | ~1800 µs |
+| Sync pulse (HIGH) | ~8200 µs (carrier on at start of each repetition) |
+| Sync gap (LOW) | ~4500 µs (silence between sync and first data bit) |
+| Bit pulse (HIGH) | ~560 µs (fixed for all bits) |
+| Bit 0 gap (LOW) | ~570 µs |
+| Bit 1 gap (LOW) | ~1700 µs |
+
+Original WBFM-decoded values (pulse 400, sync_gap 670, bit gaps 670/1800)
+were systematically off; the values above came from a clean AM-demod
+RTL-SDR capture on 2026-05-09 and are what actually drives the fans.
 
 ## Encoding
 
@@ -79,12 +84,13 @@ is nearer the main room vs the staircase landing.
 | speed2 | `11110001001110111001000001101111` | derived |
 | speed3 | `11110001001110110100100010110111` | derived |
 
-"Derived" = remote 2 address + remote 1 command bits. Should work; not yet verified
-against physical hardware.
+"Derived" = remote 2 address + remote 1 command bits. **Verified working
+against the stairs fan on 2026-05-09** — the address/command split was
+correct.
 
 ## Notes on Timing Tolerances
 
-The firmware uses the measured values. If the fan doesn't respond, the most likely
-cause is the sync gap. Try adjusting `SYNC_GAP_US` in firmware/src/main.cpp:
-- Increase to 4000–10000 µs if the fan ignores all commands
-- Reduce to 0 if the fan responds erratically
+The firmware reads timing from the JSON payload sent to `/transmit`, so all
+tuning is in `devices/sofa_king_fan.yaml` — no reflash needed. The values
+above (especially `sync_gap_us: 4500`) are what got the fans responding;
+deviating much from them stops working.

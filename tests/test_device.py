@@ -107,7 +107,7 @@ def test_build_transmit_payload_shape(profile):
         "sync_us", "sync_gap_us", "pulse_us",
         "zero_gap_us", "one_gap_us", "repeat_count",
     }
-    assert payload["timing"]["pulse_us"] == 400
+    assert payload["timing"]["pulse_us"] == 560
     assert payload["timing"]["repeat_count"] == 20
 
 
