@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 
 // ─── USER CONFIG ──────────────────────────────────────────────────────────────
 const char *WIFI_SSID = "22 Parsons";
@@ -15,14 +16,16 @@ const int   TX_PIN    = D1;               // DATA pin → HiLetgo MX-FS-03V TX m
 //   gap LOW: ZERO_GAP (bit 0) or ONE_GAP (bit 1)
 //   sync = SYNC_US HIGH burst before each code repetition
 //
-// If the fan doesn't respond, try increasing SYNC_GAP_US (e.g. 4000–10000 µs)
-// or reducing REPEAT_N to see if timing is the issue.
+// Values measured from a clean AM-demod RTL-SDR capture on 2026-05-09.
+// Keep these in sync with devices/sofa_king_fan.yaml; legacy /fan/{N}/{cmd}
+// endpoints use these constants, while POST /transmit reads from the
+// JSON payload (which the Python CLI loads from the YAML).
 //
-const uint32_t SYNC_US    = 8000;  // sync HIGH pulse before each repetition
-const uint32_t SYNC_GAP   =  670;  // LOW gap between sync and first data bit
-const uint32_t PULSE_US   =  400;  // carrier-ON pulse (same for all bits)
-const uint32_t ZERO_GAP   =  670;  // LOW gap = bit 0
-const uint32_t ONE_GAP    = 1800;  // LOW gap = bit 1
+const uint32_t SYNC_US    = 8200;  // sync HIGH pulse before each repetition
+const uint32_t SYNC_GAP   = 4500;  // LOW gap between sync and first data bit
+const uint32_t PULSE_US   =  560;  // carrier-ON pulse (same for all bits)
+const uint32_t ZERO_GAP   =  570;  // LOW gap = bit 0
+const uint32_t ONE_GAP    = 1700;  // LOW gap = bit 1
 const int      REPEAT_N   =   20;  // repetitions per button press (remote uses 36–41)
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -225,6 +228,19 @@ void setup() {
     }
     Serial.printf("\nConnected! IP: %s\n", WiFi.localIP().toString().c_str());
 
+    // Advertise as ceilingfans.local on the LAN. Home Assistant's
+    // rest_command can hit URLs at that hostname instead of the IP,
+    // which means the config doesn't break on DHCP lease changes.
+    // addService("http", "tcp", 80) also makes the chip visible in
+    // service browsers (`dns-sd -B _services._dns-sd._udp local.`)
+    // and to Home Assistant's auto-discovery.
+    if (MDNS.begin("ceilingfans")) {
+        MDNS.addService("http", "tcp", 80);
+        Serial.println("mDNS: ceilingfans.local (advertising _http._tcp on :80)");
+    } else {
+        Serial.println("mDNS: setup FAILED — falling back to IP only");
+    }
+
     // Fan 1 (main)
     server.on("/fan/1/light",  HTTP_GET, h1Light);
     server.on("/fan/1/off",    HTTP_GET, h1Off);
@@ -246,11 +262,12 @@ void setup() {
     server.begin();
     Serial.println("HTTP server ready");
     Serial.println("Endpoints:");
-    Serial.println("  POST /transmit                (generic bits + timing)");
-    Serial.println("  GET  /fan/{1,2}/{light,off,speed1,speed2,speed3}  (legacy hardcoded)");
+    Serial.println("  POST http://ceilingfans.local/transmit                (generic bits + timing)");
+    Serial.println("  GET  http://ceilingfans.local/fan/{1,2}/{light,off,speed1,speed2,speed3}");
 }
 
 // ─── LOOP ────────────────────────────────────────────────────────────────────
 void loop() {
+    MDNS.update();
     server.handleClient();
 }

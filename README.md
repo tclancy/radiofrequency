@@ -28,25 +28,24 @@ Probably the cleanest config in `configuration.yaml`:
 
 ```yaml
 rest_command:
-  fan_main_light:    {url: "http://nodemcu.local/fan/1/light",  method: GET}
-  fan_main_off:      {url: "http://nodemcu.local/fan/1/off",    method: GET}
-  fan_main_speed1:   {url: "http://nodemcu.local/fan/1/speed1", method: GET}
-  fan_main_speed2:   {url: "http://nodemcu.local/fan/1/speed2", method: GET}
-  fan_main_speed3:   {url: "http://nodemcu.local/fan/1/speed3", method: GET}
-  fan_stairs_light:  {url: "http://nodemcu.local/fan/2/light",  method: GET}
-  fan_stairs_off:    {url: "http://nodemcu.local/fan/2/off",    method: GET}
-  fan_stairs_speed1: {url: "http://nodemcu.local/fan/2/speed1", method: GET}
-  fan_stairs_speed2: {url: "http://nodemcu.local/fan/2/speed2", method: GET}
-  fan_stairs_speed3: {url: "http://nodemcu.local/fan/2/speed3", method: GET}
+  fan_main_light:    {url: "http://ceilingfans.local/fan/1/light",  method: GET}
+  fan_main_off:      {url: "http://ceilingfans.local/fan/1/off",    method: GET}
+  fan_main_speed1:   {url: "http://ceilingfans.local/fan/1/speed1", method: GET}
+  fan_main_speed2:   {url: "http://ceilingfans.local/fan/1/speed2", method: GET}
+  fan_main_speed3:   {url: "http://ceilingfans.local/fan/1/speed3", method: GET}
+  fan_stairs_light:  {url: "http://ceilingfans.local/fan/2/light",  method: GET}
+  fan_stairs_off:    {url: "http://ceilingfans.local/fan/2/off",    method: GET}
+  fan_stairs_speed1: {url: "http://ceilingfans.local/fan/2/speed1", method: GET}
+  fan_stairs_speed2: {url: "http://ceilingfans.local/fan/2/speed2", method: GET}
+  fan_stairs_speed3: {url: "http://ceilingfans.local/fan/2/speed3", method: GET}
 ```
 
 Each one becomes a callable service (`rest_command.fan_main_light`), wireable into automations or a Lovelace card. The `template` integration can wrap pairs into a proper `fan` entity with on/off + speed if you want HA to model state correctly.
 
-**Caveats / open work:**
+**Open work for the actual integration:**
 
-1. The legacy `/fan/{N}/{cmd}` endpoints currently use the firmware's hardcoded timing constants, which are the *old* (broken) values. They worked back when the fans tolerated worse timing or never; either way, they're no longer the right path. Either reflash with the corrected `SYNC_GAP_US`/`PULSE_US` etc., or rewrite the legacy handlers to call `transmitGeneric` with the right values, or have HA call `/transmit` with a JSON body per command (more verbose YAML on the HA side).
-2. The NodeMCU advertises no mDNS, so `nodemcu.local` won't resolve out of the box. Either add `MDNS.begin("nodemcu")` to the firmware, give the NodeMCU a static DHCP reservation in the router, or hardcode the IP in `rest_command` URLs.
-3. HA on the homelab needs network reach to the NodeMCU — both are on the same LAN, should "just work."
+- HA on the homelab needs LAN reach to the NodeMCU. Both should be on the same network, so this should "just work" — verify by `curl http://ceilingfans.local/fan/1/light` from the HA host.
+- Eventual nice-to-have: a `template` fan entity that wraps the rest_command pairs into a real HA `fan` entity with state, on/off, and speed levels — so Lovelace cards and voice assistants treat it as a first-class device instead of a stack of buttons.
 
 ## Tom's setup checklist — run through this every cold start
 
@@ -60,27 +59,27 @@ Future-you forgets. This is the path from "open laptop" to "send a command at a 
    source .venv/bin/activate
    ```
    Or use `uv run <command>` from the repo root for one-shots.
-4. **Find the NodeMCU's IP** by booting and watching serial:
+4. **Try the mDNS hostname first** — once the firmware has been flashed with mDNS support, the NodeMCU advertises as `ceilingfans.local` and you can skip IP-hunting:
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" "http://ceilingfans.local/fan/1/light"
+   ```
+   `200` means everything's up. If that times out, the chip might be off or on a different LAN segment — fall back to step 5.
+5. **Find the IP via serial** if mDNS isn't resolving:
    ```bash
    cd firmware
    pio device monitor -b 115200
    ```
-   Press the board's RST button if needed. Look for `Connected! IP: 192.168.68.XX`. Note the IP, then Ctrl+C — the chip keeps running. The first second of garbage is the ESP8266 ROM bootloader; ignore it.
-5. **Smoke test:**
+   Press the board's RST button if needed. Look for `Connected! IP: 192.168.68.XX` and `mDNS: ceilingfans.local`. Note the IP, then Ctrl+C — the chip keeps running. The first second of garbage is the ESP8266 ROM bootloader; ignore it.
+6. **Send a command via the CLI** (defaults to `ceilingfans.local`):
    ```bash
-   curl -s -o /dev/null -w "%{http_code}\n" "http://<IP>/fan/1/light"
-   ```
-   `200` means HTTP server is up.
-6. **Send a command via the CLI:**
-   ```bash
-   uv run python cli.py send sofa_king_fan main light --host <IP>
+   uv run python cli.py send sofa_king_fan main light
    ```
 
 Useful gotchas worth remembering:
 
-- The DHCP lease usually gives the NodeMCU the same IP across reboots, but not always. If a curl times out, monitor again to find the new IP.
+- mDNS (`ceilingfans.local`) is the canonical address. If it stops resolving, the chip rebooted without re-registering — power-cycle the NodeMCU, then re-curl.
 - For RTL-SDR captures, the bulletproof one-liner pattern is `(sleep 3; curl ...) & timeout 8 rtl_fm ... | sox ...` — fire-and-forget, no zombies. See `docs/fan-debugging-2026-04-19.md` for the exact recipe.
-- The current bottleneck is documented in `docs/fan-debugging-2026-04-19.md`. The 9 AM ntfy nudge points there too.
+- The full debugging story (three weeks of "it doesn't work" before AM-demod recapture revealed the timing was off) is in `docs/fan-debugging-2026-04-19.md`. Keep around as folklore for the next device.
 
 ## Flashing the NodeMCU — future-you checklist
 

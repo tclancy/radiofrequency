@@ -45,7 +45,7 @@ def cli() -> None:
 @click.argument("device")
 @click.argument("unit")
 @click.argument("command")
-@click.option("--host", default="nodemcu.local", show_default=True)
+@click.option("--host", default="ceilingfans.local", show_default=True)
 @click.option("--port", default=80, show_default=True)
 def send(device: str, unit: str, command: str, host: str, port: int) -> None:
     """Send a named command from a device profile (e.g. main light)."""
@@ -70,7 +70,7 @@ def send(device: str, unit: str, command: str, host: str, port: int) -> None:
 @cli.command()
 @click.argument("bits")
 @click.option("--device", required=True, help="Device profile whose timing to use.")
-@click.option("--host", default="nodemcu.local", show_default=True)
+@click.option("--host", default="ceilingfans.local", show_default=True)
 @click.option("--port", default=80, show_default=True)
 def raw(bits: str, device: str, host: str, port: int) -> None:
     """Transmit an arbitrary bit string using a device profile's timing."""
