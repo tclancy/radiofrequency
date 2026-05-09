@@ -20,6 +20,34 @@ There is a [plan for dealing with the fans](docs/plans/2026-03-08-fan-control-ph
 - [HiLetgo 1PC ESP8266 NodeMCU CP2102 ESP-12E Development Board](http://www.hiletgo.com/ProductDetail/1906570.html)
 - [HiLetgo 315Mhz RF Transmitter and Receiver Module](http://hiletgo.com/ProductDetail/2157209.html)
 
+## Next: roll into Home Assistant
+
+The original goal was a Home Assistant automation, not a CLI. The NodeMCU's HTTP endpoints make this straightforward — HA's `rest_command` integration just needs URLs.
+
+Probably the cleanest config in `configuration.yaml`:
+
+```yaml
+rest_command:
+  fan_main_light:    {url: "http://nodemcu.local/fan/1/light",  method: GET}
+  fan_main_off:      {url: "http://nodemcu.local/fan/1/off",    method: GET}
+  fan_main_speed1:   {url: "http://nodemcu.local/fan/1/speed1", method: GET}
+  fan_main_speed2:   {url: "http://nodemcu.local/fan/1/speed2", method: GET}
+  fan_main_speed3:   {url: "http://nodemcu.local/fan/1/speed3", method: GET}
+  fan_stairs_light:  {url: "http://nodemcu.local/fan/2/light",  method: GET}
+  fan_stairs_off:    {url: "http://nodemcu.local/fan/2/off",    method: GET}
+  fan_stairs_speed1: {url: "http://nodemcu.local/fan/2/speed1", method: GET}
+  fan_stairs_speed2: {url: "http://nodemcu.local/fan/2/speed2", method: GET}
+  fan_stairs_speed3: {url: "http://nodemcu.local/fan/2/speed3", method: GET}
+```
+
+Each one becomes a callable service (`rest_command.fan_main_light`), wireable into automations or a Lovelace card. The `template` integration can wrap pairs into a proper `fan` entity with on/off + speed if you want HA to model state correctly.
+
+**Caveats / open work:**
+
+1. The legacy `/fan/{N}/{cmd}` endpoints currently use the firmware's hardcoded timing constants, which are the *old* (broken) values. They worked back when the fans tolerated worse timing or never; either way, they're no longer the right path. Either reflash with the corrected `SYNC_GAP_US`/`PULSE_US` etc., or rewrite the legacy handlers to call `transmitGeneric` with the right values, or have HA call `/transmit` with a JSON body per command (more verbose YAML on the HA side).
+2. The NodeMCU advertises no mDNS, so `nodemcu.local` won't resolve out of the box. Either add `MDNS.begin("nodemcu")` to the firmware, give the NodeMCU a static DHCP reservation in the router, or hardcode the IP in `rest_command` URLs.
+3. HA on the homelab needs network reach to the NodeMCU — both are on the same LAN, should "just work."
+
 ## Tom's setup checklist — run through this every cold start
 
 Future-you forgets. This is the path from "open laptop" to "send a command at a fan" without re-deriving anything.
