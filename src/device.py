@@ -29,14 +29,18 @@ def build_packet(profile: DeviceProfile, unit: str, command: str) -> str:
 
     Raises KeyError if unit or command is not in the profile.
     """
-    address = profile.units[unit]["address"]        # KeyError on unknown unit
-    command_bits = profile.commands[command]        # KeyError on unknown command
+    address = profile.units[unit]["address"]  # KeyError on unknown unit
+    command_bits = profile.commands[command]  # KeyError on unknown command
     return address + command_bits
 
 
 _TIMING_KEYS = (
-    "sync_us", "sync_gap_us", "pulse_us",
-    "zero_gap_us", "one_gap_us", "repeat_count",
+    "sync_us",
+    "sync_gap_us",
+    "pulse_us",
+    "zero_gap_us",
+    "one_gap_us",
+    "repeat_count",
 )
 
 

@@ -12,6 +12,7 @@ def profile():
 
 # --- packet structure ---
 
+
 def test_packet_is_32_bits(profile):
     bits = build_packet(profile, unit="main", command="speed1")
     assert len(bits) == 32
@@ -31,6 +32,7 @@ def test_packet_contains_only_01(profile):
 
 # --- address + command concatenation ---
 
+
 def test_main_speed1_address_prefix(profile):
     bits = build_packet(profile, unit="main", command="speed1")
     assert bits.startswith("1000110011110110"), "first 16 bits should be main address"
@@ -43,6 +45,7 @@ def test_stairs_off(profile):
 
 
 # --- known full codes from captures ---
+
 
 def test_main_light_full_code(profile):
     bits = build_packet(profile, unit="main", command="light")
@@ -71,6 +74,7 @@ def test_stairs_speed1_full_code(profile):
 
 # --- error handling ---
 
+
 def test_unknown_command_raises(profile):
     with pytest.raises(KeyError):
         build_packet(profile, unit="main", command="turbo")
@@ -82,6 +86,7 @@ def test_unknown_unit_raises(profile):
 
 
 # --- profile metadata ---
+
 
 def test_frequency(profile):
     assert profile.frequency_mhz == 433.935
@@ -100,12 +105,17 @@ def test_units_have_fan_number(profile):
 
 # --- build_transmit_payload ---
 
+
 def test_build_transmit_payload_shape(profile):
     payload = build_transmit_payload(profile, bits="01" * 16)
     assert payload["bits"] == "01" * 16
     assert set(payload["timing"].keys()) == {
-        "sync_us", "sync_gap_us", "pulse_us",
-        "zero_gap_us", "one_gap_us", "repeat_count",
+        "sync_us",
+        "sync_gap_us",
+        "pulse_us",
+        "zero_gap_us",
+        "one_gap_us",
+        "repeat_count",
     }
     assert payload["timing"]["pulse_us"] == 560
     assert payload["timing"]["repeat_count"] == 20

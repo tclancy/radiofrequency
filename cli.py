@@ -5,6 +5,7 @@
     python cli.py raw 10001100111101101100000000111111 \\
         --device sofa_king_fan --host 192.168.1.42
 """
+
 import sys
 
 import click
@@ -58,7 +59,9 @@ def send(device: str, unit: str, command: str, host: str, port: int) -> None:
 
     if command not in profile.commands:
         available = ", ".join(sorted(profile.commands))
-        click.echo(f"Error: unknown command '{command}'. Available: {available}", err=True)
+        click.echo(
+            f"Error: unknown command '{command}'. Available: {available}", err=True
+        )
         sys.exit(1)
 
     bits = build_packet(profile, unit=unit, command=command)

@@ -30,7 +30,7 @@ def test_send_posts_to_transmit_endpoint(runner):
 
     assert result.exit_code == 0, result.output
     assert mock_post.call_count == 1
-    url, = mock_post.call_args.args
+    (url,) = mock_post.call_args.args
     assert url == "http://1.2.3.4:80/transmit"
     payload = mock_post.call_args.kwargs["json"]
     assert payload["bits"] == "10001100111101101100000000111111"
@@ -56,9 +56,12 @@ def test_raw_posts_arbitrary_bits(runner):
         result = runner.invoke(
             cli,
             [
-                "raw", "01" * 16,
-                "--device", "sofa_king_fan",
-                "--host", "1.2.3.4",
+                "raw",
+                "01" * 16,
+                "--device",
+                "sofa_king_fan",
+                "--host",
+                "1.2.3.4",
             ],
         )
 
