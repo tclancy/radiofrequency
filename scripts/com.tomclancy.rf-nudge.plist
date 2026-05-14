@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Template copy. The live plist is at ~/Library/LaunchAgents/com.tomclancy.rf-nudge.plist
+     (where launchctl looks). If you ever restore this machine from scratch, copy this file
+     there and run:  launchctl load ~/Library/LaunchAgents/com.tomclancy.rf-nudge.plist -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.tomclancy.rf-nudge</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/tom/Documents/work/radiofrequency/scripts/rf-nudge.sh</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/Users/tom/Documents/work/radiofrequency/scripts/rf-nudge.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/tom/Documents/work/radiofrequency/scripts/rf-nudge.err</string>
+</dict>
+</plist>
