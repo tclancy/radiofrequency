@@ -88,3 +88,37 @@ def resolve_code(profile: DeviceProfile, unit: str, command: str) -> str:
     see the design spec); this is the only function that knows that.
     """
     return profile.units[unit]["codes"][command]  # KeyError on unknown names
+
+
+# Limits mirror firmware/src/main.cpp exactly so bad payloads fail here
+# with a readable message instead of a NodeMCU 400 (or a watchdog reset).
+MAX_PULSE_PAIRS = 256
+MAX_PULSE_US = 100_000
+MAX_TOTAL_US = 5_000_000  # repeat_count x sum(high+low) busy-waits the ESP8266
+
+
+def build_pulses_payload(pulses: list[tuple[int, int]], repeat_count: int) -> dict:
+    """JSON-ready body for POST /transmit (pulse-train shape)."""
+    if not pulses:
+        raise ValueError("pulses must contain at least one (high_us, low_us) pair")
+    if len(pulses) > MAX_PULSE_PAIRS:
+        raise ValueError(f"too many pulse pairs ({len(pulses)}), max {MAX_PULSE_PAIRS}")
+    if not 1 <= repeat_count <= 100:
+        raise ValueError(f"repeat_count must be 1..100, got {repeat_count}")
+    total_us = 0
+    for high_us, low_us in pulses:
+        for value in (high_us, low_us):
+            if not 1 <= value <= MAX_PULSE_US:
+                raise ValueError(
+                    f"pulse durations must be 1..{MAX_PULSE_US} µs, got {value}"
+                )
+        total_us += high_us + low_us
+    if total_us * repeat_count > MAX_TOTAL_US:
+        raise ValueError(
+            f"transmission exceeds duration budget: {total_us * repeat_count} µs "
+            f"> {MAX_TOTAL_US} µs (would busy-wait the ESP8266 into a watchdog reset)"
+        )
+    return {
+        "pulses": [[high, low] for high, low in pulses],
+        "repeat_count": repeat_count,
+    }

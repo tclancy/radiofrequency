@@ -3,6 +3,7 @@ import pytest
 from src.device import (
     DeviceProfile,
     build_packet,
+    build_pulses_payload,
     build_transmit_payload,
     pt2260_pulses,
     resolve_code,
@@ -206,3 +207,48 @@ def test_profile_load_tolerates_missing_commands(tmp_path):
     profile = DeviceProfile.load(str(p))
     assert profile.commands == {}
     assert profile.units["window"]["codes"]["off"] == "0F1F0F0F1001"
+
+
+# --- pulses payload validation (mirrors firmware limits exactly) ---
+
+
+def test_pulses_payload_shape():
+    payload = build_pulses_payload([(180, 540), (180, 5580)], repeat_count=6)
+    assert payload == {"pulses": [[180, 540], [180, 5580]], "repeat_count": 6}
+
+
+def test_pulses_payload_rejects_empty():
+    with pytest.raises(ValueError, match="at least one"):
+        build_pulses_payload([], repeat_count=6)
+
+
+def test_pulses_payload_rejects_too_many_pairs():
+    with pytest.raises(ValueError, match="256"):
+        build_pulses_payload([(10, 10)] * 257, repeat_count=1)
+
+
+def test_pulses_payload_rejects_out_of_range_us():
+    with pytest.raises(ValueError, match="1..100000"):
+        build_pulses_payload([(0, 540)], repeat_count=6)
+    with pytest.raises(ValueError, match="1..100000"):
+        build_pulses_payload([(180, 100_001)], repeat_count=6)
+
+
+def test_pulses_payload_rejects_bad_repeat_count():
+    for bad in (0, 101):
+        with pytest.raises(ValueError, match="repeat_count"):
+            build_pulses_payload([(180, 540)], repeat_count=bad)
+
+
+def test_pulses_payload_rejects_over_duration_budget():
+    # 256 pairs x 200ms x 100 reps = 5120s >> 5s budget. The firmware
+    # hard-resets on payloads like this (soft WDT ~3.2s); fail locally.
+    with pytest.raises(ValueError, match="budget"):
+        build_pulses_payload([(100_000, 100_000)] * 256, repeat_count=100)
+
+
+def test_zap_frame_fits_budget_comfortably():
+    pulses = pt2260_pulses("0F1F0F0F1010", PT2260_TIMING)
+    payload = build_pulses_payload(pulses, repeat_count=6)
+    total_us = sum(high + low for high, low in pulses) * payload["repeat_count"]
+    assert total_us < 5_000_000
