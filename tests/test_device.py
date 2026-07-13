@@ -3,6 +3,7 @@ import pytest
 from src.device import (
     DeviceProfile,
     build_packet,
+    build_payload_for,
     build_pulses_payload,
     build_transmit_payload,
     pt2260_pulses,
@@ -252,3 +253,22 @@ def test_zap_frame_fits_budget_comfortably():
     payload = build_pulses_payload(pulses, repeat_count=6)
     total_us = sum(high + low for high, low in pulses) * payload["repeat_count"]
     assert total_us < 5_000_000
+
+
+# --- payload routing by encoding ---
+
+
+def test_payload_for_pt2260_profile_is_pulse_shaped():
+    payload = build_payload_for(_pt2260_profile(), "window", "on")
+    assert set(payload) == {"pulses", "repeat_count"}
+    assert payload["repeat_count"] == 6
+    assert len(payload["pulses"]) == 25
+    assert payload["pulses"][-1] == [180, 5580]  # sync pair last
+
+
+def test_payload_for_fan_profile_unchanged(profile):
+    payload = build_payload_for(profile, "main", "light")
+    assert set(payload) == {"bits", "timing"}
+    assert payload == build_transmit_payload(
+        profile, bits=build_packet(profile, unit="main", command="light")
+    )

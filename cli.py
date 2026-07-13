@@ -11,7 +11,7 @@ import sys
 import click
 import httpx
 
-from src.device import DeviceProfile, build_packet, build_transmit_payload
+from src.device import DeviceProfile, build_payload_for, build_transmit_payload
 
 DEVICES_DIR = "devices"
 
@@ -64,10 +64,9 @@ def send(device: str, unit: str, command: str, host: str, port: int) -> None:
         )
         sys.exit(1)
 
-    bits = build_packet(profile, unit=unit, command=command)
-    payload = build_transmit_payload(profile, bits=bits)
+    payload = build_payload_for(profile, unit=unit, command=command)
     _post_transmit(host, port, payload)
-    click.echo(f"OK  {command} → {device}/{unit}  [{bits}]")
+    click.echo(f"OK  {command} → {device}/{unit}")
 
 
 @cli.command()

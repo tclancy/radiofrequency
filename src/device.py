@@ -122,3 +122,13 @@ def build_pulses_payload(pulses: list[tuple[int, int]], repeat_count: int) -> di
         "pulses": [[high, low] for high, low in pulses],
         "repeat_count": repeat_count,
     }
+
+
+def build_payload_for(profile: DeviceProfile, unit: str, command: str) -> dict:
+    """Build the right POST /transmit body for this profile's encoding."""
+    if profile.encoding == "PT2260":
+        code = resolve_code(profile, unit, command)
+        pulses = pt2260_pulses(code, profile.timing)
+        return build_pulses_payload(pulses, profile.timing["repeat_count"])
+    bits = build_packet(profile, unit=unit, command=command)
+    return build_transmit_payload(profile, bits=bits)
