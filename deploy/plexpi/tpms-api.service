@@ -1,0 +1,18 @@
+[Unit]
+Description=TPMS JSON API — reads tpms.sqlite3, serves :8090
+Documentation=https://github.com/tclancy/radiofrequency/issues/7
+After=network.target
+
+[Service]
+Type=simple
+Environment=TPMS_DB=%h/.local/share/tpms/tpms.sqlite3
+Environment=TPMS_LOW_PSI=30.0
+Environment=TPMS_STALE_SECONDS=900
+WorkingDirectory=%h/tpms
+ExecStart=%h/tpms/.venv/bin/python -m src.tpms.api
+Restart=on-failure
+RestartSec=15
+StandardError=append:%h/tpms-logs/api.log
+
+[Install]
+WantedBy=default.target

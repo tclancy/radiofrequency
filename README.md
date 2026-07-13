@@ -4,6 +4,13 @@ This is a repository for attempting to make my home ceiling fans [smart like thi
 
 There is a [plan for dealing with the fans](docs/plans/2026-03-08-fan-control-phase1.md).
 
+## TPMS ingest (issue #7)
+
+Slice-1 lives under `src/tpms/`: read rtl_433 JSON from stdin, write to SQLite,
+expose a small JSON API for a future home dashboard. Scope for slice-1 is
+parked-only, any-tire-low alerting for the 2013 Mazda CX-9 (315 MHz, decoder
+r156). Systemd units + install ritual: [`deploy/plexpi/`](deploy/plexpi/README.md).
+
 ## What We Are Working With
 
 ### Software
