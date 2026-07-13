@@ -1,0 +1,21 @@
+[Unit]
+Description=TPMS capture — rtl_433 -> ingest daemon (Mazda CX-9, 315 MHz decoder r156)
+Documentation=https://github.com/tclancy/radiofrequency/issues/7
+Wants=tpms-ingest.socket
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment=TPMS_DB=/var/lib/tpms/tpms.sqlite3
+# rtl_433 streams JSON on stdout; the ingest daemon reads its stdin. Piping via
+# systemd keeps this to a single unit — no MQTT broker required for slice-1.
+ExecStart=/bin/sh -c '/usr/bin/rtl_433 -f 315000000 -R 156 -F json 2>>/var/log/tpms/rtl_433.log | /home/pi/tpms/.venv/bin/python -m src.tpms.ingest'
+Restart=on-failure
+RestartSec=15
+WorkingDirectory=/home/pi/tpms
+StandardError=append:/var/log/tpms/capture.log
+
+[Install]
+WantedBy=default.target
