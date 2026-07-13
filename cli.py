@@ -11,7 +11,12 @@ import sys
 import click
 import httpx
 
-from src.device import DeviceProfile, build_payload_for, build_transmit_payload
+from src.device import (
+    DeviceProfile,
+    available_commands,
+    build_payload_for,
+    build_transmit_payload,
+)
 
 DEVICES_DIR = "devices"
 
@@ -57,8 +62,9 @@ def send(device: str, unit: str, command: str, host: str, port: int) -> None:
         click.echo(f"Error: unknown unit '{unit}'. Available: {available}", err=True)
         sys.exit(1)
 
-    if command not in profile.commands:
-        available = ", ".join(sorted(profile.commands))
+    commands = available_commands(profile, unit)
+    if command not in commands:
+        available = ", ".join(sorted(commands))
         click.echo(
             f"Error: unknown command '{command}'. Available: {available}", err=True
         )

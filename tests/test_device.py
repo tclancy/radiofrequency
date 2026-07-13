@@ -2,6 +2,7 @@ import pytest
 
 from src.device import (
     DeviceProfile,
+    available_commands,
     build_packet,
     build_payload_for,
     build_pulses_payload,
@@ -193,6 +194,14 @@ def test_resolve_code_looks_up_unit_command():
 def test_resolve_code_unknown_unit_raises_keyerror():
     with pytest.raises(KeyError):
         resolve_code(_pt2260_profile(), "basement", "on")
+
+
+def test_available_commands_pt2260_reads_unit_codes():
+    assert available_commands(_pt2260_profile(), "window") == {"on", "off"}
+
+
+def test_available_commands_legacy_reads_profile_commands(profile):
+    assert available_commands(profile, "main") == set(profile.commands)
 
 
 def test_profile_load_tolerates_missing_commands(tmp_path):

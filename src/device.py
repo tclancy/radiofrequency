@@ -90,6 +90,13 @@ def resolve_code(profile: DeviceProfile, unit: str, command: str) -> str:
     return profile.units[unit]["codes"][command]  # KeyError on unknown names
 
 
+def available_commands(profile: DeviceProfile, unit: str) -> set[str]:
+    """Command names valid for this unit under the profile's encoding."""
+    if profile.encoding == "PT2260":
+        return set(profile.units[unit].get("codes", {}))
+    return set(profile.commands)
+
+
 # Limits mirror firmware/src/main.cpp exactly so bad payloads fail here
 # with a readable message instead of a NodeMCU 400 (or a watchdog reset).
 MAX_PULSE_PAIRS = 256
