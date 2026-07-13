@@ -107,9 +107,14 @@ def normalize(event: dict, now: datetime | None = None) -> dict | None:
 
 
 def _parse_time(event: dict, now: datetime | None) -> int:
-    """rtl_433 emits `time` as `YYYY-MM-DD HH:MM:SS` (local). If missing or
-    unparseable, fall back to injected `now` (or current wall clock). Returns
-    unix seconds UTC.
+    """Parse rtl_433's `time` string into unix seconds UTC.
+
+    rtl_433 emits `time` as `YYYY-MM-DD HH:MM:SS` — **assumed to be UTC** because
+    the capture unit invokes rtl_433 with `-M utc` (see deploy/plexpi/tpms-
+    capture.service). Without `-M utc`, rtl_433 emits system-local time with no
+    tz suffix, which would silently skew every reading by the local UTC offset.
+    If the field is missing or unparseable, fall back to injected `now` (or the
+    current wall clock).
     """
     raw = event.get("time")
     if isinstance(raw, str):
@@ -188,7 +193,8 @@ def main() -> int:  # pragma: no cover - thin CLI wrapper
         level=logging.INFO,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
-    return 0 if run() >= 0 else 1
+    run()
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover

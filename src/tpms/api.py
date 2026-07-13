@@ -22,6 +22,7 @@ Design notes:
 
 from __future__ import annotations
 
+import sqlite3
 import time
 from pathlib import Path
 
@@ -53,6 +54,12 @@ def create_app(config: Config | None = None) -> Flask:
     cfg = config or Config.from_env()
     app = Flask(__name__)
     app.config["TPMS_CONFIG"] = cfg
+
+    # Init schema once at app startup so per-request connects can skip the
+    # `CREATE TABLE IF NOT EXISTS` script and vehicle upsert. The API is a
+    # concurrent reader alongside the ingest daemon — extra write-lock traffic
+    # per request would contend needlessly on the plexpi SQLite file.
+    db.connect(cfg.db_path).close()
 
     @app.get("/api/vehicles")
     def list_vehicles():
@@ -135,8 +142,13 @@ def create_app(config: Config | None = None) -> Flask:
     return app
 
 
-def _connect(db_path: Path):
-    return db.connect(db_path)
+def _connect(db_path: Path) -> sqlite3.Connection:
+    """Lightweight read-side connection. Assumes create_app() already ran
+    `db.connect` once to init the schema.
+    """
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def _vehicle_exists(conn, slug: str) -> bool:

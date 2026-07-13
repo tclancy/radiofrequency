@@ -193,14 +193,18 @@ def history_for_vehicle(
     until: int,
     limit: int = 5000,
 ) -> list[sqlite3.Row]:
+    # JOIN sensors on (vehicle_id, sensor_id) not sensor_id alone: TPMS sensor
+    # IDs aren't globally unique, so if a second vehicle is ever seeded, an
+    # overlapping ID would otherwise cross-contaminate the history results.
     return conn.execute(
         """
         SELECT r.ts, r.sensor_id, r.pressure_kpa, r.temperature_c, r.battery_ok
         FROM readings r
-        JOIN sensors s ON s.sensor_id = r.sensor_id
-        JOIN vehicles v ON v.id = s.vehicle_id
-        WHERE v.slug = ?
-          AND r.ts >= ?
+        JOIN vehicles v ON v.slug = ?
+        JOIN sensors s
+          ON s.vehicle_id = v.id
+         AND s.sensor_id = r.sensor_id
+        WHERE r.ts >= ?
           AND r.ts <= ?
         ORDER BY r.ts DESC
         LIMIT ?
