@@ -1,6 +1,12 @@
 import pytest
 
-from src.device import DeviceProfile, build_packet, build_transmit_payload
+from src.device import (
+    DeviceProfile,
+    build_packet,
+    build_transmit_payload,
+    pt2260_pulses,
+    resolve_code,
+)
 
 PROFILE_PATH = "devices/sofa_king_fan.yaml"
 
@@ -126,3 +132,77 @@ def test_build_transmit_payload_rejects_bad_bits(profile):
         build_transmit_payload(profile, bits="")
     with pytest.raises(ValueError):
         build_transmit_payload(profile, bits="0102")
+
+
+# --- PT2260 pulse-train encoding ---
+
+PT2260_TIMING = {
+    "short_us": 180,
+    "long_us": 540,
+    "sync_gap_us": 5580,
+    "repeat_count": 6,
+}
+
+
+def _pt2260_profile():
+    return DeviceProfile(
+        frequency_mhz=433.92,
+        encoding="PT2260",
+        timing=PT2260_TIMING,
+        commands={},
+        units={
+            "window": {
+                "position": 2,
+                "codes": {"on": "0F1F0F0F1010", "off": "0F1F0F0F1001"},
+            },
+        },
+    )
+
+
+def test_pt2260_symbol_waveforms():
+    # '0' = 2x (short-high, long-low); '1' = 2x (long-high, short-low);
+    # 'F' = (short-high, long-low) then (long-high, short-low); sync pair last.
+    assert pt2260_pulses("01F", PT2260_TIMING) == [
+        (180, 540),
+        (180, 540),  # 0
+        (540, 180),
+        (540, 180),  # 1
+        (180, 540),
+        (540, 180),  # F
+        (180, 5580),  # sync
+    ]
+
+
+def test_pt2260_full_frame_is_25_pairs():
+    # 12 symbols x 2 pulses + 1 sync pair
+    assert len(pt2260_pulses("0F1F0F0F1010", PT2260_TIMING)) == 25
+
+
+def test_pt2260_rejects_invalid_symbol():
+    with pytest.raises(ValueError, match="symbol"):
+        pt2260_pulses("01X", PT2260_TIMING)
+
+
+def test_resolve_code_looks_up_unit_command():
+    profile = _pt2260_profile()
+    assert resolve_code(profile, "window", "on") == "0F1F0F0F1010"
+
+
+def test_resolve_code_unknown_unit_raises_keyerror():
+    with pytest.raises(KeyError):
+        resolve_code(_pt2260_profile(), "basement", "on")
+
+
+def test_profile_load_tolerates_missing_commands(tmp_path):
+    yaml_text = (
+        "frequency_mhz: 433.92\n"
+        "encoding: PT2260\n"
+        "timing: {short_us: 180, long_us: 540, sync_gap_us: 5580, repeat_count: 6}\n"
+        "units:\n"
+        "  window: {position: 2, codes: {'on': '0F1F0F0F1010', 'off': '0F1F0F0F1001'}}\n"
+    )
+    p = tmp_path / "zap.yaml"
+    p.write_text(yaml_text)
+    profile = DeviceProfile.load(str(p))
+    assert profile.commands == {}
+    assert profile.units["window"]["codes"]["off"] == "0F1F0F0F1001"
