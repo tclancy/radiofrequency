@@ -100,6 +100,24 @@ void transmitGeneric(const char *bits,
     }
 }
 
+// Fully generic transmit: an explicit train of (high_us, low_us) pairs.
+// This is the last protocol-shaped capability the firmware should ever
+// need — PDM, PWM, tri-state etc. are all just pulse trains to the pin.
+// Every pair ends LOW, so the pin is always left LOW.
+void transmitPulses(JsonArrayConst pairs, int repeat_count) {
+    for (int r = 0; r < repeat_count; r++) {
+        for (JsonArrayConst pair : pairs) {
+            digitalWrite(TX_PIN, HIGH);
+            delayMicroseconds(pair[0].as<uint32_t>());
+            digitalWrite(TX_PIN, LOW);
+            delayMicroseconds(pair[1].as<uint32_t>());
+            // Fed per pair, not per repetition: delayMicroseconds() is a
+            // busy-wait and the soft WDT fires at ~3.2 s.
+            ESP.wdtFeed();
+        }
+    }
+}
+
 // ─── HTTP HANDLERS ───────────────────────────────────────────────────────────
 // POST /transmit — body is JSON:
 //   {"bits": "010...", "timing": {"sync_us":N, "sync_gap_us":N,
@@ -118,6 +136,45 @@ void handleTransmit() {
     DeserializationError err = deserializeJson(doc, server.arg("plain"));
     if (err) {
         server.send(400, "text/plain", String("bad json: ") + err.c_str() + "\n");
+        return;
+    }
+
+    // New body shape: {"pulses": [[high_us, low_us], ...], "repeat_count": N}
+    if (doc["pulses"].is<JsonArray>()) {
+        JsonArrayConst pairs = doc["pulses"].as<JsonArrayConst>();
+        size_t n = pairs.size();
+        if (n == 0 || n > 256) {
+            server.send(400, "text/plain", "pulses must be 1..256 pairs\n");
+            return;
+        }
+        int repeat_count = doc["repeat_count"] | 0;
+        if (repeat_count < 1 || repeat_count > 100) {
+            server.send(400, "text/plain", "repeat_count must be 1..100\n");
+            return;
+        }
+        uint64_t total_us = 0;
+        for (JsonArrayConst pair : pairs) {
+            if (pair.size() != 2) {
+                server.send(400, "text/plain", "each pulse must be [high_us, low_us]\n");
+                return;
+            }
+            uint32_t high_us = pair[0] | 0u;
+            uint32_t low_us  = pair[1] | 0u;
+            if (high_us == 0 || high_us > 100000 || low_us == 0 || low_us > 100000) {
+                server.send(400, "text/plain", "pulse durations must be 1..100000 us\n");
+                return;
+            }
+            total_us += high_us + low_us;
+        }
+        // Budget: worst-case limits would otherwise allow a 51 s busy-wait
+        // in a single repetition — far past the ~3.2 s soft watchdog.
+        if (total_us * (uint64_t)repeat_count > 5000000ULL) {
+            server.send(400, "text/plain", "transmission exceeds 5 s duration budget\n");
+            return;
+        }
+        transmitPulses(pairs, repeat_count);
+        String reply = String("OK ") + n + " pairs x " + repeat_count + " reps\n";
+        server.send(200, "text/plain", reply);
         return;
     }
 
@@ -262,7 +319,7 @@ void setup() {
     server.begin();
     Serial.println("HTTP server ready");
     Serial.println("Endpoints:");
-    Serial.println("  POST http://ceilingfans.local/transmit                (generic bits + timing)");
+    Serial.println("  POST http://ceilingfans.local/transmit                (bits+timing, or pulses+repeat_count)");
     Serial.println("  GET  http://ceilingfans.local/fan/{1,2}/{light,off,speed1,speed2,speed3}");
 }
 
