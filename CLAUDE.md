@@ -27,26 +27,19 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 - PlatformIO (VSCode extension) — NodeMCU firmware deployment
 - Python (this repo) — generic control CLI
 
-## Project Status (as of 2026-04-05)
+## Project Status (as of 2026-07-15)
 
-- RTL-SDR confirmed working (`rtl_test` shows device, tuner recognized)
-- Gqrx installed and device recognized
-- **Frequency confirmed: 433.935 MHz** (both remotes, all buttons)
-- 315 MHz showed no signal; 433 MHz band is correct (common for import fans)
-- Gain at ~38 dB, AGC off works well
-- TX module and dupont wires in hand
-- **Protocol fully decoded** — see `PROTOCOL.md` and `devices/sofa_king_fan.yaml`
-- **Firmware, CLI, and tests written** — see `firmware/`, `cli.py`, `src/`, `tests/`
+- **Fans: fully working.** Both Sofucor fans controllable via NodeMCU HTTP (`/fan/*` routes); protocol in `PROTOCOL.md`, profile in `devices/sofa_king_fan.yaml`
+- **Lights: fully working.** Etekcity ZAP 5LX outlets (window, couch, speaker, chairs) decoded and controllable via `cli.py send zap_lights <unit> <on|off>` — PT2260 tri-state codes captured 2026-07-15, all 4 lamps verified end-to-end
+- Firmware has a generic pulse-train endpoint (`POST /transmit` with `pulses` + `repeat_count`) — new protocols need zero firmware changes
+- `scripts/export_web_devices.py` derives the PWA `devices.json` bundle from the YAML profiles; homelab 22-parsons-remote PWA consumes it (tracked in the companion issue)
 - Interactive signal explorer built (`signal_explorer.py`) — Streamlit app for understanding OOK waveforms
 
 ## Next Session Starting Point
 
-1. ~~Capture WAV files with `rtl_fm` for each button on both remotes~~ ✓ (7 captures in `captures/`)
-2. ~~Decode the OOK pulse timings~~ ✓ (see `PROTOCOL.md`)
-3. **Wire up the NodeMCU + TX module** (3 wires: VCC→VIN, GND→GND, DATA→D1)
-4. Flash the firmware via PlatformIO (`firmware/`)
-5. Test replay — does the fan respond?
-6. See `docs/plans/2026-03-08-fan-control-phase1.md` for full plan
+1. Homelab PWA integration — regenerate `devices.json` via `scripts/export_web_devices.py` and wire it into the 22-parsons-remote PWA (companion issue)
+2. TPMS monitoring for the three vehicles (see memory notes) is still an open idea
+3. Debugging tip: transient RF interference can make a far outlet miss a command — verify with the SDR-witness technique in `PROTOCOL.md` before suspecting code
 
 ## Useful Tools for Signal Analysis
 
