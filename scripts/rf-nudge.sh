@@ -9,7 +9,7 @@
 set -euo pipefail
 
 NTFY_URL="https://notifications.tomclancy.info/claude"
-NTFY_TOKEN="tk_97t85yxi0lj8gtu1kupx2f7pnd53n"
+NTFY_TOKEN="tk_rml1243afnct2wyxtxzo6pcvhwg83"
 
 MSG='RF fans: first move is TX module VCC wiring — VIN (5V) or 3V3? See docs/fan-debugging-2026-04-19.md on claude/generic-firmware branch.'
 
