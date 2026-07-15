@@ -281,3 +281,32 @@ def test_payload_for_fan_profile_unchanged(profile):
     assert payload == build_transmit_payload(
         profile, bits=build_packet(profile, unit="main", command="light")
     )
+
+
+# --- real ZAP profile ---
+
+ZAP_PROFILE_PATH = "devices/zap_lights.yaml"
+
+
+@pytest.fixture
+def zap_profile():
+    return DeviceProfile.load(ZAP_PROFILE_PATH)
+
+
+def test_zap_profile_has_all_four_lamps(zap_profile):
+    assert set(zap_profile.units) == {"window", "couch", "speaker", "chairs"}
+
+
+def test_zap_all_eight_buttons_encode(zap_profile):
+    for unit, spec in zap_profile.units.items():
+        for command in ("on", "off"):
+            payload = build_payload_for(zap_profile, unit, command)
+            assert len(payload["pulses"]) == 25, f"{unit}/{command}"
+            assert payload["repeat_count"] == zap_profile.timing["repeat_count"]
+
+
+def test_zap_codes_are_twelve_tristate_symbols(zap_profile):
+    for unit, spec in zap_profile.units.items():
+        for command, code in spec["codes"].items():
+            assert len(code) == 12, f"{unit}/{command}"
+            assert set(code).issubset({"0", "1", "F"}), f"{unit}/{command}"

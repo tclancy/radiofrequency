@@ -94,3 +94,55 @@ The firmware reads timing from the JSON payload sent to `/transmit`, so all
 tuning is in `devices/sofa_king_fan.yaml` — no reflash needed. The values
 above (especially `sync_gap_us: 4500`) are what got the fans responding;
 deviating much from them stops working.
+
+## Etekcity ZAP 5LX (lighting outlets)
+
+Captured 2026-07-15 from the living-room remote with:
+
+```bash
+rtl_433 -f 433.92M -A -S unknown    # one button per run, ~1 s press
+```
+
+Raw IQ recordings: `captures/zap_remote_pos{2-5}_{on,off}.cu8` (250 ksps).
+
+### Encoding
+
+PT2260-family tri-state OOK PWM (HS2260A-R4). Each 12-symbol code is sent
+as 24 pulses plus a sync pair; symbols are `0` (2x short-high/long-low),
+`1` (2x long-high/short-low), `F` (short-high/long-low then
+long-high/short-low). rtl_433 saw ~47 frame repeats over a 1 s press.
+
+### Measured timing (all 8 buttons identical)
+
+| Parameter | Value | PT2260 ideal |
+|-----------|-------|--------------|
+| short pulse | 184 µs | 1α |
+| long pulse | 548 µs | 3α (552) |
+| sync gap | 5684 µs | 31α (5704) |
+| SNR at couch distance | ~15 dB | — |
+
+α ≈ 184 µs. rtl_433 reported high-pulse widths of 204/576 µs and low-gap
+widths of 160/528 µs — the TX rise/fall skews highs long and lows short by
+~20 µs; the symmetric 184/548 values are the underlying chip timing and are
+what `devices/zap_lights.yaml` uses.
+
+### Codes
+
+| Position | Lamp | ON | OFF | raw (rtl_433 `{25}`) |
+|----------|------|----|----|----------------------|
+| 2 | window | `0FFFFFFF1001` | `0FFFFFFF1010` | `eaaa3c8` / `eaaa338` |
+| 3 | couch | `0FFFFFF10001` | `0FFFFFF10010` | `eaa8fc8` / `eaa8f38` |
+| 4 | speaker | `0FFFFF1F0001` | `0FFFFF1F0010` | `eaa2fc8` / `eaa2f38` |
+| 5 | chairs | `0FFFF1FF0001` | `0FFFF1FF0010` | `ea8afc8` / `ea8af38` |
+
+Raw-bit mapping: rtl_433 OOK_PWM emits `1` per short pulse, `0` per long;
+symbol pairs decode as `11`→`0`, `00`→`1`, `10`→`F`; the 25th bit is the
+sync pulse.
+
+### Structure
+
+Not a clean 8+4 address/command split. Symbol 1 is `0`, symbols 2–9 are `F`
+except a one-hot `1` that walks left one symbol per outlet position
+(pos 2 → symbol 9, pos 3 → 8, pos 4 → 7, pos 5 → 6), and the last two
+symbols are `01` = ON, `10` = OFF. The YAML stores full 12-symbol codes per
+button, so this structure is documentation only.

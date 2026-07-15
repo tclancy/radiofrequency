@@ -1,0 +1,32 @@
+# Etekcity ZAP 5LX outlet remote — RF Device Profile
+# Encoding: PT2260-family tri-state OOK PWM (HS2260A-R4 encoder)
+# Codes captured from OUR living-room remote on 2026-07-15 — see PROTOCOL.md.
+# Positions 2-5 drive the living room lamps; outlets are learning-code
+# receivers paired to this remote.
+
+frequency_mhz: 433.92   # documentation-only: the MX-FS-03V TX is SAW-locked here
+encoding: PT2260
+
+timing:
+  short_us: 184         # 1-alpha segment (measured; rtl_433 timing distribution)
+  long_us: 548          # 3-alpha segment (~3x short_us; ideal 552, measured 548)
+  sync_gap_us: 5684     # long LOW after the sync pulse (~31x short_us)
+  repeat_count: 6       # remote repeats while held; receiver needs a few clean ones
+
+# Full 12-symbol tri-state code per button (no address/command factoring —
+# the capture is the source of truth; see the design spec deviation note).
+# Observed structure: one-hot '1' walks left one symbol per position
+# (pos2 -> symbol 9 ... pos5 -> symbol 6); last two symbols 01=on, 10=off.
+units:
+  window:
+    position: 2
+    codes: {"on": "0FFFFFFF1001", "off": "0FFFFFFF1010"}
+  couch:
+    position: 3
+    codes: {"on": "0FFFFFF10001", "off": "0FFFFFF10010"}
+  speaker:
+    position: 4
+    codes: {"on": "0FFFFF1F0001", "off": "0FFFFF1F0010"}
+  chairs:
+    position: 5
+    codes: {"on": "0FFFF1FF0001", "off": "0FFFF1FF0010"}
