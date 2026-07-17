@@ -146,3 +146,17 @@ except a one-hot `1` that walks left one symbol per outlet position
 (pos 2 → symbol 9, pos 3 → 8, pos 4 → 7, pos 5 → 6), and the last two
 symbols are `01` = ON, `10` = OFF. The YAML stores full 12-symbol codes per
 button, so this structure is documentation only.
+
+### Repeat count — chairs (pos 5) ON reliability
+
+The chairs outlet latched ON only intermittently at `repeat_count: 6`,
+independent of transmitter distance; OFF and the other three lamps were
+reliable. Diagnosis ruled out a code bug: the chairs ON pulse train is
+byte-correct (matches the factory remote's decoded `ea8afc8`) and
+structurally identical to the working lamps' ON trains. The differentiator
+is frame count — the factory remote sends ~47 frames per press vs our 6.
+That outlet's receiver needs more consecutive clean frames to latch ON than
+6 provides. Raised `repeat_count` to **15** (352 ms/transmit, well under the
+5 s firmware budget); chairs ON then switched reliably across repeated
+trials. Fix is YAML-only (timings/repeats are read from the profile at send
+time — no reflash).
