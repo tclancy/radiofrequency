@@ -121,3 +121,23 @@ Use this to see whether the NodeMCU is actually putting RF into the air when you
 - dB range: drag the range slider so the noise floor is dark and bursts pop bright. If everything is one color, you're clipped — adjust.
 
 **What a good burst looks like:** when you fire the curl, you should see a vertical bright stripe centered on 433.935 MHz lasting ~1 second (20 packet repeats × ~55 ms each). The signal meter jumps; in AM mode you'll hear a rapid chatter through speakers.
+
+## Agent's Understanding — Issue #15 (2026-07-19 day shift, agent:opus)
+
+Task: add a GitHub Actions workflow that publishes `devices.json` as a Release asset on every `v*` tag push. Downstream `parsons-remote` PWA (currently at `homelab/services/22-parsons-remote/www/devices.json`) will fetch the artifact at build time so it never duplicates codes/timings from `devices/*.yaml` — the YAML stays the single source of truth.
+
+**Approach:** new `.github/workflows/release.yml`, triggered on tag push matching `v*`. Runs `scripts/export_web_devices.py`, then uses `gh release create` / `gh release upload --clobber` to attach the JSON. `contents: write` permission scoped to the job only. Actions pinned to commit SHAs following the fleet standard (`docs/quality-gates.md` in metaframework) — `actions/checkout@v7.0.0` SHA + `astral-sh/setup-uv@v8.3.2` SHA.
+
+**Why release asset, not committed JSON:** violates derive-don't-duplicate to commit derived data on the source axis. Release-asset pattern also lets downstream repos pin to an immutable version (`v1.2.3`) — no source-branch drift trap of the kind #257 fixed for homelab source repos.
+
+**Why `gh release ... --clobber` over `softprops/action-gh-release`:** `gh` is already on the runner, requires no third-party action to pin, and the two-line form (`create --generate-notes || true` + `upload --clobber`) is safely idempotent (re-runnable on the same tag without exploding). Adds no new supply-chain surface.
+
+**Alternatives rejected:**
+- Committing `devices.json` alongside YAML (γ in the memo): the exporter output is derived; committing it moves the drift problem into radiofrequency instead of solving it.
+- Publishing to a package registry (npm, PyPI): overkill for a single JSON file; release asset is one HTTP GET from a stable URL.
+- Wire into existing `ci.yml`: coupling test/lint to publish is bad separation — releases fire on tag push only, tests fire on every PR.
+
+**Out of scope for this PR:**
+- Editing `ci.yml` (SHA-pin sweep of the existing workflow lives in a separate follow-up if we want it — agent.md says pin *opportunistically when you touch a repo's CI*, and this PR adds a new workflow rather than editing the existing one).
+- Cutting an actual tag on `main` — that's Tom's decision after the workflow lands.
+- The downstream PWA repo (`parsons-remote`) and homelab deploy switch — filed as separate tracker issues.
