@@ -23,35 +23,12 @@ jobs:
         run: uv python install
       - name: Install dependencies (incl. dev group for the exporter regression test)
         run: uv sync --frozen --all-groups
-      - name: Run exporter regression fence
-        # Guards against the tag-push silent-success class-of-bug — the exporter's
-        # existing test asserts shape/sort/serializability, so any subtle break
-        # (empty commands dict, wrong encoding filter, etc.) fails here rather
-        # than shipping a valid-JSON-but-wrong-shape artifact.
-        run: uv run pytest tests/test_export_web_devices.py -x
-      - name: Build devices.json
-        run: uv run python scripts/export_web_devices.py > devices.json
-      - name: Sanity check that JSON parses and has lights
-        run: |
-          uv run python - <<'PY'
-          import json, sys
-          data = json.load(open("devices.json"))
-          lights = data.get("lights")
-          if not lights:
-              print("devices.json has no lights", file=sys.stderr)
-              sys.exit(1)
-          bad = [l for l in lights if not (l.get("unit") and l.get("commands"))]
-          if bad:
-              print(f"devices.json entries missing unit/commands: {bad}", file=sys.stderr)
-              sys.exit(1)
-          print(f"devices.json: {len(lights)} lights")
-          PY
-      - name: Publish devices.json as release asset
+      - name: Publish devices.json to Release
+        # Delegates test fence, JSON build, sanity check, and gh release
+        # create/upload to scripts/publish-devices-release.sh — one source
+        # of truth for local (TAG=v0.1.0 scripts/publish-devices-release.sh)
+        # and CI. Idempotent on re-run for the same tag.
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: |
-          # Create the release if it doesn't already exist (idempotent on re-run).
-          gh release create "$TAG" --generate-notes --title "$TAG" || true
-          # Upload (or replace) devices.json on the release.
-          gh release upload "$TAG" devices.json --clobber
+        run: bash scripts/publish-devices-release.sh
