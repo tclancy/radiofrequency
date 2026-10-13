@@ -41,19 +41,26 @@ A generic RF signal reverse-engineering and replay toolkit. The Sofucor ceiling 
 2. TPMS monitoring for the three vehicles (see memory notes) is still an open idea
 3. Debugging tip: transient RF interference can make a far outlet miss a command — verify with the SDR-witness technique in `PROTOCOL.md` before suspecting code
 
+## Onboarding a New Device
+
+Use the `rf-device-onboarding` skill (`skills/rf-device-onboarding/`, symlinked into
+`~/.claude/skills/`). It has the phase checklist, capture/decode commands,
+profile shapes and the "transmits but device ignores it" troubleshooting ladder.
+
 ## Useful Tools for Signal Analysis
 
 - **Universal Radio Hacker (URH)** — `brew install urh` — purpose-built for OOK signal analysis, auto-detects pulse widths and bit patterns. Try this before squinting at Audacity.
-- **rtl_433** — `brew install rtl_433` — auto-decodes hundreds of OOK protocols. May already know the Sofucor protocol. See auto-decode investigation notes below.
-- **Audacity** — manual fallback for measuring pulse timings by hand
+- **rtl_433** — `brew install rtl_433` — auto-decodes hundreds of OOK protocols. `-A` analyzes pulses, `-S unknown` saves raw `.cu8` captures you can re-decode offline with `-r`.
+- **Audacity** — manual fallback for measuring pulse timings by hand. Only measure from `rtl_fm -M am` captures — WBFM smears edges by ±50–100 µs.
 
 ## rtl_433 Auto-Decode Notes
 
-GitHub issue #3345 documents the **exact Sofucor FT0317R protocol**:
-- OOK_PWM, short pulse ~302 µs, long pulse ~906 µs, period 1212 µs
-- 32-bit payload: 16-bit button ID + 16-bit remote ID
-- 5 repeats per press
-- Flex decoder: `rtl_433 -X "n=Sofucor,m=OOK_PWM,s=302,l=906,g=1000,r=5000"`
+GitHub issue merbanan/rtl_433#3345 describes the Sofucor FT0317R as OOK_PWM
+(~302/906 µs). **That does not match our remotes** — ours are OOK_PDM
+(fixed ~560 µs pulse, gap encodes the bit: 570 µs = 0, 1700 µs = 1), and the
+OOK_PWM flex decoder produced 1–9 garbage bits per frame. Treat published
+decoder specs as hints; measured values live in `PROTOCOL.md`.
+
 - WAV files may need conversion to `.cu8` format before rtl_433 can read them
 - Also try the triq.org/pdv/ browser visualizer for .ook pulse files
 
@@ -62,51 +69,47 @@ GitHub issue #3345 documents the **exact Sofucor FT0317R protocol**:
 - *Make: Electronics* (3rd ed) — Ch 1-2 for signal/oscillation fundamentals
 - rtl_433 wiki — OOK signal analysis examples with visuals
 - Instructables guide linked in README
-- GitHub issue merbanan/rtl_433#3345 — Sofucor-specific protocol analysis
+- GitHub issue merbanan/rtl_433#3345 — Sofucor discussion (timings there are wrong for our remotes, see above)
 
 ## Key Architecture Decisions
 
-- Device profiles are YAML files in `devices/` — one file per RF device
-- YAML is the single source of truth (firmware + Python CLI both read from it)
-- NodeMCU firmware is generic — no device-specific logic, reads profiles from flash
-- Python CLI is generic: `python main.py <device> <command>`
+- Device profiles are YAML files in `devices/` — one file per RF device type
+- YAML is the single source of truth: `src/device.py` turns a profile into a `/transmit` JSON payload; `scripts/export_web_devices.py` derives the PWA bundle from it
+- NodeMCU firmware is generic — no device-specific logic; timings and pulses arrive in each `POST /transmit` body, so tuning never needs a reflash
+- Python CLI is generic: `uv run python cli.py send <device> <unit> <command>` (and `raw <bits> --device <device>` for A/B experiments)
 - No breadboard needed — 3 female-to-female dupont wires connect TX module to NodeMCU
 
 ## Multiple Units of the Same Device Type
 
-There are two Sofucor fans, each with its own remote. RF remotes almost always encode signals as:
+There are two Sofucor fans, each with its own remote. Many RF remotes encode signals as:
 
 `[sync] [address bits — unique per remote unit] [command bits — same for all units of that type]`
 
-The YAML schema must account for this. Proposed approach: a device *type* file defines the protocol and commands; each physical unit adds only its unique address. Example:
+A device *type* file defines the protocol and commands; each physical unit adds only its unique address. Excerpt of the real profile:
 
 ```yaml
 # devices/sofa_king_fan.yaml
-frequency_mhz: 315
-encoding: OOK
-timing:
-  short_pulse_us: 350
-  long_pulse_us: 1050
-  sync_us: 10500
-commands:          # command bits only — address prepended at send time
-  speed_1: "0001"
-  speed_2: "0010"
-  speed_3: "0100"
-  off:     "1000"
-  light:   "0110"
-
+frequency_mhz: 433.935
+encoding: OOK_PDM
+timing: {sync_us: 8200, sync_gap_us: 4500, pulse_us: 560,
+         zero_gap_us: 570, one_gap_us: 1700, repeat_count: 20}
 units:
-  bedroom:     { address: "10101010" }
-  living_room: { address: "11001100" }
+  main:   { address: "1000110011110110" }
+  stairs: { address: "1111000100111011" }
+commands:          # 16-bit command field, appended to the address at send time
+  light: "1100000000111111"
+  "off": "0100000010111111"
 ```
 
-CLI usage: `python main.py sofucor_fan bedroom speed_1`
+CLI usage: `uv run python cli.py send sofa_king_fan main light`
 
-This means capturing both remotes during Phase 1 — press each button on remote 1, then repeat for remote 2. Comparing the two captures will reveal exactly which bits are the address and which are the command.
+Not every device splits cleanly: the ZAP outlets (`devices/zap_lights.yaml`,
+`encoding: PT2260`) store a full tri-state code per unit instead. Capturing the
+same button on two remotes is what reveals which shape you have.
 
-## Wiring (when TX module arrives)
+## Wiring
 
-- TX VCC → NodeMCU VIN (5V preferred, 3.3V may work)
+- TX VCC → NodeMCU VIN (5V — 3.3V leaves the carrier half-on between pulses)
 - TX GND → NodeMCU GND
 - TX DATA → NodeMCU D1 (or any GPIO)
 
