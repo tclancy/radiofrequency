@@ -1,0 +1,14 @@
+{
+  "eval_id": 1,
+  "eval_name": "sensor-dashboard",
+  "prompt": "I have a CSV of temperature readings over time with columns timestamp, sensor_id, temp_celsius, and humidity. Can you build something so I can explore it interactively? Maybe filter by sensor and date range. The CSV is at data/readings.csv",
+  "assertions": [
+    {"name": "uses_cache_data", "description": "App uses @st.cache_data for data loading"},
+    {"name": "sidebar_controls", "description": "Sensor filter and date range controls are in the sidebar"},
+    {"name": "dark_theme_charts", "description": "Matplotlib charts use dark background colors matching Streamlit"},
+    {"name": "width_stretch", "description": "Uses width='stretch' not deprecated use_container_width=True"},
+    {"name": "plt_close", "description": "Calls plt.close() after st.pyplot()"},
+    {"name": "docstring_with_run_cmd", "description": "Has a docstring at the top with streamlit run command"},
+    {"name": "relative_paths", "description": "Uses Path(__file__).parent for data file paths"}
+  ]
+}

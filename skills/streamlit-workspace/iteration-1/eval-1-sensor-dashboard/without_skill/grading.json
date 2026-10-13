@@ -1,0 +1,41 @@
+{
+  "eval_id": 1,
+  "run_type": "without_skill",
+  "expectations": [
+    {
+      "text": "App uses @st.cache_data for data loading",
+      "passed": true,
+      "evidence": "Line 19: @st.cache_data decorator on load_data() function"
+    },
+    {
+      "text": "Sensor filter and date range controls are in the sidebar",
+      "passed": true,
+      "evidence": "Lines 46-72: sidebar header, multiselect for sensors, and date_input all use st.sidebar"
+    },
+    {
+      "text": "Matplotlib charts use dark background colors matching Streamlit",
+      "passed": false,
+      "evidence": "File uses Plotly charts (px.line, px.box) instead of Matplotlib. No dark background facecolor or ax.set_facecolor() calls found. Plotly's default theme is light, not Streamlit's dark theme"
+    },
+    {
+      "text": "Uses width='stretch' not deprecated use_container_width=True",
+      "passed": false,
+      "evidence": "Line 122: st.plotly_chart(fig_temp, use_container_width=True) - uses deprecated use_container_width=True instead of width='stretch'"
+    },
+    {
+      "text": "Calls plt.close() after st.pyplot()",
+      "passed": false,
+      "evidence": "File uses Plotly (st.plotly_chart) not Matplotlib (st.pyplot). No plt.close() calls found anywhere in the file"
+    },
+    {
+      "text": "Has a docstring at the top with streamlit run command",
+      "passed": false,
+      "evidence": "No docstring at the top. File starts with imports at line 1, no multi-line docstring with run command"
+    },
+    {
+      "text": "Uses Path(__file__).parent for data file paths",
+      "passed": false,
+      "evidence": "Lines 27-30: Uses hardcoded string paths and os.path.exists() with absolute paths, not Path(__file__).parent"
+    }
+  ]
+}

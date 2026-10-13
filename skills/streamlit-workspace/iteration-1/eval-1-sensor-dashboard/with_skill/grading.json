@@ -1,0 +1,41 @@
+{
+  "eval_id": 1,
+  "run_type": "with_skill",
+  "expectations": [
+    {
+      "text": "App uses @st.cache_data for data loading",
+      "passed": true,
+      "evidence": "Line 29: @st.cache_data decorator on load_data() function"
+    },
+    {
+      "text": "Sensor filter and date range controls are in the sidebar",
+      "passed": true,
+      "evidence": "Lines 54-83: sidebar title, date_input, and multiselect for sensors all use st.sidebar"
+    },
+    {
+      "text": "Matplotlib charts use dark background colors matching Streamlit",
+      "passed": true,
+      "evidence": "Lines 122-123, 157-158: facecolor='#0e1117' (dark) and ax.set_facecolor('#161b22') (darker panel); text colors set to #e6edf3 (white) and ticks to #8b949e (muted)"
+    },
+    {
+      "text": "Uses width='stretch' not deprecated use_container_width=True",
+      "passed": true,
+      "evidence": "Lines 150, 185, 248: st.pyplot() calls use width='stretch' parameter"
+    },
+    {
+      "text": "Calls plt.close() after st.pyplot()",
+      "passed": true,
+      "evidence": "Lines 151, 186, 249: plt.close(fig) called immediately after each st.pyplot()"
+    },
+    {
+      "text": "Has a docstring at the top with streamlit run command",
+      "passed": true,
+      "evidence": "Lines 1-9: Triple-quoted docstring with 'Run with: streamlit run sensor_dashboard.py'"
+    },
+    {
+      "text": "Uses Path(__file__).parent for data file paths",
+      "passed": true,
+      "evidence": "Line 38: script_dir = Path(__file__).parent; Line 42: constructs data_dir using Path operations relative to script location"
+    }
+  ]
+}

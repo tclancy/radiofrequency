@@ -1,0 +1,41 @@
+{
+  "eval_id": 3,
+  "run_type": "without_skill",
+  "expectations": [
+    {
+      "text": "App uses @st.cache_data for YAML loading",
+      "passed": true,
+      "evidence": "Line 13: @st.cache_data decorator on load_device_profile() function"
+    },
+    {
+      "text": "Timing sliders and command selector are in the sidebar",
+      "passed": false,
+      "evidence": "Lines 132-184: Timing sliders use st.sidebar, but lines 187-201: Command and unit selection use st.columns/st.selectbox (main area), not sidebar"
+    },
+    {
+      "text": "Matplotlib charts use dark background colors matching Streamlit",
+      "passed": false,
+      "evidence": "Line 86: matplotlib fig created with default settings; Line 88: plot uses '#1f77b4' (light blue) color without setting dark facecolor or ax.set_facecolor(). No dark theme styling applied"
+    },
+    {
+      "text": "Uses width='stretch' not deprecated use_container_width=True",
+      "passed": false,
+      "evidence": "Line 228: st.pyplot(fig, use_container_width=True) uses deprecated use_container_width=True instead of width='stretch'"
+    },
+    {
+      "text": "Calls plt.close() after st.pyplot()",
+      "passed": false,
+      "evidence": "File does not call plt.close() anywhere after st.pyplot() at line 228"
+    },
+    {
+      "text": "Loads and parses the actual sofucor_fan.yaml device profile",
+      "passed": true,
+      "evidence": "Line 114: yaml_path = Path('/sessions/.../sofucor_fan.yaml') hardcoded; Line 121: load_device_profile(str(yaml_path)) called; Lines 124-125: accesses config['frequency_mhz'] and config['encoding']"
+    },
+    {
+      "text": "Waveform generation correctly implements OOK pulse-distance modulation",
+      "passed": true,
+      "evidence": "Lines 21-81: generate_waveform() creates samples with pulse followed by gap; Lines 65-79: bits encoded correctly with 'if bit == 1' checking to select one_gap_us vs zero_gap_us, implementing pulse-distance modulation"
+    }
+  ]
+}

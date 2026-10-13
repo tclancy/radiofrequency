@@ -1,0 +1,41 @@
+{
+  "eval_id": 3,
+  "run_type": "with_skill",
+  "expectations": [
+    {
+      "text": "App uses @st.cache_data for YAML loading",
+      "passed": true,
+      "evidence": "Line 26: @st.cache_data decorator on load_device_yaml() function that loads YAML file"
+    },
+    {
+      "text": "Timing sliders and command selector are in the sidebar",
+      "passed": true,
+      "evidence": "Lines 136-221: All controls (command selectbox line 157, unit selectbox line 167, and timing sliders lines 175-213) use st.sidebar"
+    },
+    {
+      "text": "Matplotlib charts use dark background colors matching Streamlit",
+      "passed": true,
+      "evidence": "Lines 119-123: DARK_BG='#0e1117', PANEL_BG='#161b22', WHITE='#e6edf3', MUTED='#8b949e' color constants; Line 235: facecolor=DARK_BG; Line 236: ax.set_facecolor(PANEL_BG)"
+    },
+    {
+      "text": "Uses width='stretch' not deprecated use_container_width=True",
+      "passed": true,
+      "evidence": "Line 259: st.pyplot(fig, width='stretch')"
+    },
+    {
+      "text": "Calls plt.close() after st.pyplot()",
+      "passed": true,
+      "evidence": "Line 260: plt.close(fig) called immediately after st.pyplot()"
+    },
+    {
+      "text": "Loads and parses the actual sofucor_fan.yaml device profile",
+      "passed": true,
+      "evidence": "Lines 26-30: load_device_yaml() uses yaml.safe_load(); Lines 33-49: get_yaml_path() locates sofucor_fan.yaml with fallback candidates; Line 140: load_device_yaml(yaml_path) called to load actual file"
+    },
+    {
+      "text": "Waveform generation correctly implements OOK pulse-distance modulation",
+      "passed": true,
+      "evidence": "Lines 55-87: generate_waveform() creates waveform tuples with (duration, level); Lines 78-85: bits encoded as pulse HIGH followed by gap LOW where gap duration depends on bit value ('0'→zero_gap_us, '1'→one_gap_us), implementing pulse-distance modulation correctly"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "waveform-viz",
+  "prompt": "Create a streamlit dashboard that reads my devices/sofucor_fan.yaml and lets me visualize different command waveforms with adjustable timing parameters.",
+  "assertions": [
+    {"name": "uses_cache_data", "description": "App uses @st.cache_data for YAML loading"},
+    {"name": "sidebar_controls", "description": "Timing sliders and command selector are in the sidebar"},
+    {"name": "dark_theme_charts", "description": "Matplotlib charts use dark background colors matching Streamlit"},
+    {"name": "width_stretch", "description": "Uses width='stretch' not deprecated use_container_width=True"},
+    {"name": "plt_close", "description": "Calls plt.close() after st.pyplot()"},
+    {"name": "reads_real_yaml", "description": "Loads and parses the actual sofucor_fan.yaml device profile"},
+    {"name": "correct_waveform", "description": "Waveform generation correctly implements OOK pulse-distance modulation"}
+  ]
+}

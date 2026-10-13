@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "streamlit", "runs": [{"id": "eval-1-sensor-dashboard-with_skill", "prompt": "I have a CSV of temperature readings over time with columns timestamp, sensor_id, temp_celsius, and humidity. Can you build something so I can explore it interactively? Maybe filter by sensor and date range. The CSV is at data/readings.csv", "eval_id": 1, "outputs": [{"name": "sensor_dashboard.py", "type": "text", "content": "\"\"\"\nInteractive sensor data explorer dashboard.\n\nLoad temperature and humidity readings from a CSV file and explore them\nwith filters by sensor and date range. Includes time series charts,\nstatistics, and raw data table.\n\nRun with:  streamlit run sensor_dashboard.py\n\"\"\"\n\nimport streamlit as st\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom datetime import datetime, timedelta\nfrom pathlib import Path\n\n# ============================================================================\n# Page configuration (must be first Streamlit call)\n# ============================================================================\nst.set_page_config(\n    page_title=\"Sensor Dashboard\",\n    layout=\"wide\",\n    initial_sidebar_state=\"expanded\"\n)\n\n# ============================================================================\n# Data loading (cached)\n# ============================================================================\n@st.cache_data\ndef load_data(csv_path):\n    \"\"\"Load CSV data and parse timestamp column.\"\"\"\n    df = pd.read_csv(csv_path)\n    df[\"timestamp\"] = pd.to_datetime(df[\"timestamp\"])\n    return df.sort_values(\"timestamp\").reset_index(drop=True)\n\n\n# Locate the data file relative to this script\nscript_dir = Path(__file__).parent\n# Navigate up to find the test-data directory\n# Structure: with_skill/outputs/sensor_dashboard.py\n# Need: test-data/readings.csv (4 levels up)\ndata_dir = script_dir.parent.parent.parent / \"test-data\"\ncsv_path = data_dir / \"readings.csv\"\n\nif not csv_path.exists():\n    st.error(f\"Data file not found at {csv_path}\")\n    st.stop()\n\ndf = load_data(str(csv_path))\n\n# ============================================================================\n# Sidebar controls\n# ============================================================================\nst.sidebar.title(\"Controls\")\n\n# Get min/max dates from data\nmin_date = df[\"timestamp\"].min().date()\nmax_date = df[\"timestamp\"].max().date()\n\n# Date range selector\ndate_range = st.sidebar.date_input(\n    \"Select date range\",\n    value=(min_date, max_date),\n    min_value=min_date,\n    max_value=max_date\n)\n\nif len(date_range) == 2:\n    start_date, end_date = date_range\n    start_datetime = pd.Timestamp(start_date)\n    end_datetime = pd.Timestamp(end_date) + timedelta(days=1)\nelse:\n    start_datetime = pd.Timestamp(min_date)\n    end_datetime = pd.Timestamp(max_date) + timedelta(days=1)\n\n# Sensor selector\nall_sensors = sorted(df[\"sensor_id\"].unique().tolist())\nselected_sensors = st.sidebar.multiselect(\n    \"Select sensors\",\n    options=all_sensors,\n    default=all_sensors,\n    help=\"Pick one or more sensors to display\"\n)\n\nif not selected_sensors:\n    st.warning(\"Please select at least one sensor.\")\n    st.stop()\n\n# ============================================================================\n# Filter data based on sidebar selections\n# ============================================================================\nfiltered_df = df[\n    (df[\"timestamp\"] >= start_datetime) &\n    (df[\"timestamp\"] < end_datetime) &\n    (df[\"sensor_id\"].isin(selected_sensors))\n].copy()\n\nif filtered_df.empty:\n    st.warning(\"No data matches the selected filters.\")\n    st.stop()\n\n# ============================================================================\n# Main content\n# ============================================================================\nst.title(\"Sensor Data Explorer\")\nst.markdown(f\"**Showing {len(filtered_df)} readings across {len(selected_sensors)} sensor(s)**\")\n\n# Tabs for different views\ntab1, tab2, tab3 = st.tabs([\"Time Series\", \"Statistics\", \"Raw Data\"])\n\n# ============================================================================\n# Tab 1: Time Series Charts\n# ============================================================================\nwith tab1:\n    col1, col2 = st.columns(2)\n\n    # Temperature chart\n    with col1:\n        st.subheader(\"Temperature Over Time\")\n\n        # Prepare data for plotting\n        fig, ax = plt.subplots(figsize=(10, 5), facecolor=\"#0e1117\")\n        ax.set_facecolor(\"#161b22\")\n\n        for sensor in selected_sensors:\n            sensor_data = filtered_df[filtered_df[\"sensor_id\"] == sensor]\n            ax.plot(\n                sensor_data[\"timestamp\"],\n                sensor_data[\"temp_celsius\"],\n                marker=\"o\",\n                markersize=3,\n                label=sensor,\n                linewidth=1.5,\n                alpha=0.8\n            )\n\n        ax.set_xlabel(\"Time\", color=\"#e6edf3\")\n        ax.set_ylabel(\"Temperature (\u00b0C)\", color=\"#e6edf3\")\n        ax.set_title(\"Temperature Over Time\", color=\"#e6edf3\", fontsize=12, fontweight=\"bold\")\n        ax.legend(loc=\"best\")\n        ax.grid(True, alpha=0.2)\n        ax.tick_params(colors=\"#8b949e\")\n        ax.spines[\"top\"].set_visible(False)\n        ax.spines[\"right\"].set_visible(False)\n        ax.spines[\"bottom\"].set_color(\"#8b949e\")\n        ax.spines[\"left\"].set_color(\"#8b949e\")\n\n        plt.xticks(rotation=45, ha=\"right\")\n        plt.tight_layout()\n        st.pyplot(fig, width=\"stretch\")\n        plt.close(fig)\n\n    # Humidity chart\n    with col2:\n        st.subheader(\"Humidity Over Time\")\n\n        fig, ax = plt.subplots(figsize=(10, 5), facecolor=\"#0e1117\")\n        ax.set_facecolor(\"#161b22\")\n\n        for sensor in selected_sensors:\n            sensor_data = filtered_df[filtered_df[\"sensor_id\"] == sensor]\n            ax.plot(\n                sensor_data[\"timestamp\"],\n                sensor_data[\"humidity\"],\n                marker=\"s\",\n                markersize=3,\n                label=sensor,\n                linewidth=1.5,\n                alpha=0.8\n            )\n\n        ax.set_xlabel(\"Time\", color=\"#e6edf3\")\n        ax.set_ylabel(\"Humidity (%)\", color=\"#e6edf3\")\n        ax.set_title(\"Humidity Over Time\", color=\"#e6edf3\", fontsize=12, fontweight=\"bold\")\n        ax.legend(loc=\"best\")\n        ax.grid(True, alpha=0.2)\n        ax.tick_params(colors=\"#8b949e\")\n        ax.spines[\"top\"].set_visible(False)\n        ax.spines[\"right\"].set_visible(False)\n        ax.spines[\"bottom\"].set_color(\"#8b949e\")\n        ax.spines[\"left\"].set_color(\"#8b949e\")\n\n        plt.xticks(rotation=45, ha=\"right\")\n        plt.tight_layout()\n        st.pyplot(fig, width=\"stretch\")\n        plt.close(fig)\n\n# ============================================================================\n# Tab 2: Statistics\n# ============================================================================\nwith tab2:\n    st.subheader(\"Summary Statistics by Sensor\")\n\n    for sensor in selected_sensors:\n        sensor_data = filtered_df[filtered_df[\"sensor_id\"] == sensor]\n\n        with st.expander(f\"\ud83d\udcca {sensor}\", expanded=(len(selected_sensors) == 1)):\n            col1, col2, col3, col4 = st.columns(4)\n\n            temp_data = sensor_data[\"temp_celsius\"]\n            humidity_data = sensor_data[\"humidity\"]\n\n            with col1:\n                st.metric(\n                    \"Avg Temperature\",\n                    f\"{temp_data.mean():.2f}\u00b0C\",\n                    delta=f\"{temp_data.std():.2f}\u00b0C (std)\"\n                )\n\n            with col2:\n                st.metric(\n                    \"Temp Range\",\n                    f\"{temp_data.min():.2f} to {temp_data.max():.2f}\u00b0C\"\n                )\n\n            with col3:\n                st.metric(\n                    \"Avg Humidity\",\n                    f\"{humidity_data.mean():.1f}%\",\n                    delta=f\"{humidity_data.std():.1f}% (std)\"\n                )\n\n            with col4:\n                st.metric(\n                    \"Humidity Range\",\n                    f\"{humidity_data.min():.1f} to {humidity_data.max():.1f}%\"\n                )\n\n            # Distribution plots\n            fig, axes = plt.subplots(1, 2, figsize=(12, 4), facecolor=\"#0e1117\")\n\n            for ax, data, title, ylabel in [\n                (axes[0], temp_data, \"Temperature Distribution\", \"Temperature (\u00b0C)\"),\n                (axes[1], humidity_data, \"Humidity Distribution\", \"Humidity (%)\")\n            ]:\n                ax.set_facecolor(\"#161b22\")\n                ax.hist(data, bins=20, color=\"#58a6ff\", edgecolor=\"#e6edf3\", alpha=0.7)\n                ax.set_title(title, color=\"#e6edf3\", fontweight=\"bold\")\n                ax.set_xlabel(ylabel, color=\"#e6edf3\")\n                ax.set_ylabel(\"Frequency\", color=\"#e6edf3\")\n                ax.tick_params(colors=\"#8b949e\")\n                ax.spines[\"top\"].set_visible(False)\n                ax.spines[\"right\"].set_visible(False)\n                ax.spines[\"bottom\"].set_color(\"#8b949e\")\n                ax.spines[\"left\"].set_color(\"#8b949e\")\n\n            plt.tight_layout()\n            st.pyplot(fig, width=\"stretch\")\n            plt.close(fig)\n\n# ============================================================================\n# Tab 3: Raw Data\n# ============================================================================\nwith tab3:\n    st.subheader(\"Raw Data Table\")\n\n    # Display options\n    col1, col2 = st.columns(2)\n    with col1:\n        show_all = st.checkbox(\"Show all rows\", value=False)\n    with col2:\n        sort_by = st.selectbox(\"Sort by\", [\"timestamp\", \"sensor_id\", \"temp_celsius\"])\n\n    display_df = filtered_df.sort_values(sort_by).reset_index(drop=True)\n\n    if not show_all:\n        display_df = display_df.head(100)\n        st.info(f\"Showing first 100 of {len(filtered_df)} rows. Check 'Show all rows' to see everything.\")\n\n    st.dataframe(display_df, use_container_width=True)\n\n    # Download button\n    csv_data = filtered_df.to_csv(index=False)\n    st.download_button(\n        label=\"Download filtered data as CSV\",\n        data=csv_data,\n        file_name=f\"sensor_readings_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv\",\n        mime=\"text/csv\"\n    )\n\n# ============================================================================\n# Footer\n# ============================================================================\nst.divider()\nst.caption(\n    f\"Data spans {min_date} to {max_date} \u2022 \"\n    f\"Total readings: {len(df)} \u2022 \"\n    f\"Active sensors: {len(selected_sensors)}\"\n)\n"}], "grading": {"eval_id": 1, "run_type": "with_skill", "expectations": [{"text": "App uses @st.cache_data for data loading", "passed": true, "evidence": "Line 29: @st.cache_data decorator on load_data() function"}, {"text": "Sensor filter and date range controls are in the sidebar", "passed": true, "evidence": "Lines 54-83: sidebar title, date_input, and multiselect for sensors all use st.sidebar"}, {"text": "Matplotlib charts use dark background colors matching Streamlit", "passed": true, "evidence": "Lines 122-123, 157-158: facecolor='#0e1117' (dark) and ax.set_facecolor('#161b22') (darker panel); text colors set to #e6edf3 (white) and ticks to #8b949e (muted)"}, {"text": "Uses width='stretch' not deprecated use_container_width=True", "passed": true, "evidence": "Lines 150, 185, 248: st.pyplot() calls use width='stretch' parameter"}, {"text": "Calls plt.close() after st.pyplot()", "passed": true, "evidence": "Lines 151, 186, 249: plt.close(fig) called immediately after each st.pyplot()"}, {"text": "Has a docstring at the top with streamlit run command", "passed": true, "evidence": "Lines 1-9: Triple-quoted docstring with 'Run with: streamlit run sensor_dashboard.py'"}, {"text": "Uses Path(__file__).parent for data file paths", "passed": true, "evidence": "Line 38: script_dir = Path(__file__).parent; Line 42: constructs data_dir using Path operations relative to script location"}]}}, {"id": "eval-1-sensor-dashboard-without_skill", "prompt": "I have a CSV of temperature readings over time with columns timestamp, sensor_id, temp_celsius, and humidity. Can you build something so I can explore it interactively? Maybe filter by sensor and date range. The CSV is at data/readings.csv", "eval_id": 1, "outputs": [{"name": "README.txt", "type": "text", "content": "Streamlit Sensor Dashboard - Without Skill Guidance\n=====================================================\n\nDELIVERABLES COMPLETED:\n\n1. Output Directory Created\n   /sessions/friendly-relaxed-goodall/mnt/radiofrequency/.claude/skills/streamlit-workspace/iteration-1/eval-1-sensor-dashboard/without_skill/outputs/\n\n2. Test Data Generated\n   File: ../../../test-data/readings.csv\n   - 504 records (3 sensors \u00d7 24 hours \u00d7 7 days)\n   - Columns: timestamp, sensor_id, temp_celsius, humidity\n   - Date range: 2026-03-29 to 2026-04-04\n   - Realistic daily temperature cycles (cooler at night, warmer during day)\n   - Simulated sensor-specific baseline temperatures and humidity\n\n3. Streamlit App Created\n   File: sensor_dashboard.py (198 lines)\n   \n   Features:\n   - Multi-sensor temperature and humidity visualization\n   - Interactive date range filter (min: 2026-03-29, max: 2026-04-04)\n   - Multi-select sensor filter (SENSOR_001, SENSOR_002, SENSOR_003)\n   - 4 main tabs:\n     * Temperature Over Time: Line chart with markers\n     * Humidity Over Time: Line chart with markers\n     * Statistics: Summary stats table + box plots\n     * Raw Data: Filterable data grid with CSV download\n   - Data summary sidebar with metrics\n   - Responsive Plotly charts with hover tooltips\n   - CSV download functionality for filtered data\n\n4. Smoke Test Passed\n   \u2713 Python syntax valid\n   \u2713 Core imports work (streamlit, pandas)\n   \u2713 Note: plotly not installed in test environment (expected)\n\nUSAGE:\n   streamlit run sensor_dashboard.py\n\n   The app expects data/readings.csv in the current directory,\n   or auto-discovers from alternate paths including the test-data location.\n\nNO EXTERNAL SKILLS CONSULTED - built from general Streamlit knowledge.\n"}, {"name": "sensor_dashboard.py", "type": "text", "content": "import streamlit as st\nimport pandas as pd\nimport plotly.express as px\nimport plotly.graph_objects as go\nfrom datetime import datetime, timedelta\nimport os\n\n# Page configuration\nst.set_page_config(\n    page_title=\"Temperature Sensor Dashboard\",\n    page_icon=\"thermometer\",\n    layout=\"wide\"\n)\n\nst.title(\"Temperature Sensor Dashboard\")\nst.markdown(\"Explore temperature and humidity readings from multiple sensors over time.\")\n\n# Load data\n@st.cache_data\ndef load_data(filepath):\n    \"\"\"Load CSV data and parse timestamps.\"\"\"\n    df = pd.read_csv(filepath)\n    df['timestamp'] = pd.to_datetime(df['timestamp'])\n    return df\n\n# Determine data path - check multiple locations\npossible_paths = [\n    \"data/readings.csv\",\n    \"../../../test-data/readings.csv\",\n    \"/sessions/friendly-relaxed-goodall/mnt/radiofrequency/.claude/skills/streamlit-workspace/iteration-1/eval-1-sensor-dashboard/test-data/readings.csv\"\n]\n\ndata_path = None\nfor path in possible_paths:\n    if os.path.exists(path):\n        data_path = path\n        break\n\nif data_path is None:\n    st.error(\"Could not find readings.csv in expected locations.\")\n    st.stop()\n\ndf = load_data(data_path)\n\n# Display data summary\nwith st.sidebar:\n    st.header(\"Data Summary\")\n    st.metric(\"Total Records\", len(df))\n    st.metric(\"Sensors\", df['sensor_id'].nunique())\n    st.metric(\"Date Range\", f\"{df['timestamp'].min().date()} to {df['timestamp'].max().date()}\")\n\n# Filters\nst.sidebar.header(\"Filters\")\n\n# Sensor filter\nall_sensors = sorted(df['sensor_id'].unique().tolist())\nselected_sensors = st.sidebar.multiselect(\n    \"Select Sensors\",\n    all_sensors,\n    default=all_sensors\n)\n\n# Date range filter\nmin_date = df['timestamp'].min().date()\nmax_date = df['timestamp'].max().date()\n\ndate_range = st.sidebar.date_input(\n    \"Date Range\",\n    value=(min_date, max_date),\n    min_value=min_date,\n    max_value=max_date\n)\n\n# Handle date range\nif isinstance(date_range, tuple) and len(date_range) == 2:\n    start_date, end_date = date_range\nelse:\n    start_date = min_date\n    end_date = max_date\n\n# Filter data\nfiltered_df = df[\n    (df['sensor_id'].isin(selected_sensors)) &\n    (df['timestamp'].dt.date >= start_date) &\n    (df['timestamp'].dt.date <= end_date)\n]\n\n# Display filtered data summary\nst.sidebar.markdown(\"---\")\nst.sidebar.subheader(\"Filtered Data\")\nst.sidebar.metric(\"Records\", len(filtered_df))\nif len(filtered_df) > 0:\n    st.sidebar.metric(\"Temp Range (\u00b0C)\", f\"{filtered_df['temp_celsius'].min():.1f} to {filtered_df['temp_celsius'].max():.1f}\")\n    st.sidebar.metric(\"Humidity Range (%)\", f\"{filtered_df['humidity'].min():.1f} to {filtered_df['humidity'].max():.1f}\")\n\n# Main content\nif len(filtered_df) == 0:\n    st.warning(\"No data matches the selected filters.\")\n    st.stop()\n\n# Create tabs for different views\ntab1, tab2, tab3, tab4 = st.tabs([\"Temperature Over Time\", \"Humidity Over Time\", \"Statistics\", \"Raw Data\"])\n\nwith tab1:\n    st.subheader(\"Temperature Readings\")\n\n    fig_temp = px.line(\n        filtered_df,\n        x='timestamp',\n        y='temp_celsius',\n        color='sensor_id',\n        title='Temperature Over Time',\n        labels={'temp_celsius': 'Temperature (\u00b0C)', 'timestamp': 'Date/Time', 'sensor_id': 'Sensor'},\n        markers=True\n    )\n    fig_temp.update_layout(\n        hovermode='x unified',\n        height=500,\n        xaxis_title='Date/Time',\n        yaxis_title='Temperature (\u00b0C)'\n    )\n    st.plotly_chart(fig_temp, use_container_width=True)\n\nwith tab2:\n    st.subheader(\"Humidity Readings\")\n\n    fig_humidity = px.line(\n        filtered_df,\n        x='timestamp',\n        y='humidity',\n        color='sensor_id',\n        title='Humidity Over Time',\n        labels={'humidity': 'Humidity (%)', 'timestamp': 'Date/Time', 'sensor_id': 'Sensor'},\n        markers=True\n    )\n    fig_humidity.update_layout(\n        hovermode='x unified',\n        height=500,\n        xaxis_title='Date/Time',\n        yaxis_title='Humidity (%)'\n    )\n    st.plotly_chart(fig_humidity, use_container_width=True)\n\nwith tab3:\n    st.subheader(\"Statistics by Sensor\")\n\n    # Calculate statistics\n    stats = filtered_df.groupby('sensor_id').agg({\n        'temp_celsius': ['min', 'max', 'mean'],\n        'humidity': ['min', 'max', 'mean']\n    }).round(2)\n\n    stats.columns = ['Temp Min (\u00b0C)', 'Temp Max (\u00b0C)', 'Temp Mean (\u00b0C)',\n                     'Humidity Min (%)', 'Humidity Max (%)', 'Humidity Mean (%)']\n\n    st.dataframe(stats, use_container_width=True)\n\n    # Comparative box plots\n    col1, col2 = st.columns(2)\n\n    with col1:\n        fig_temp_box = px.box(\n            filtered_df,\n            x='sensor_id',\n            y='temp_celsius',\n            title='Temperature Distribution by Sensor',\n            labels={'temp_celsius': 'Temperature (\u00b0C)', 'sensor_id': 'Sensor'}\n        )\n        fig_temp_box.update_layout(height=400)\n        st.plotly_chart(fig_temp_box, use_container_width=True)\n\n    with col2:\n        fig_humidity_box = px.box(\n            filtered_df,\n            x='sensor_id',\n            y='humidity',\n            title='Humidity Distribution by Sensor',\n            labels={'humidity': 'Humidity (%)', 'sensor_id': 'Sensor'}\n        )\n        fig_humidity_box.update_layout(height=400)\n        st.plotly_chart(fig_humidity_box, use_container_width=True)\n\nwith tab4:\n    st.subheader(\"Raw Data\")\n    st.dataframe(\n        filtered_df.sort_values('timestamp', ascending=False),\n        use_container_width=True,\n        height=600\n    )\n\n    # Download button\n    csv = filtered_df.to_csv(index=False)\n    st.download_button(\n        label=\"Download filtered data as CSV\",\n        data=csv,\n        file_name=f\"sensor_readings_{start_date}_{end_date}.csv\",\n        mime=\"text/csv\"\n    )\n"}], "grading": {"eval_id": 1, "run_type": "without_skill", "expectations": [{"text": "App uses @st.cache_data for data loading", "passed": true, "evidence": "Line 19: @st.cache_data decorator on load_data() function"}, {"text": "Sensor filter and date range controls are in the sidebar", "passed": true, "evidence": "Lines 46-72: sidebar header, multiselect for sensors, and date_input all use st.sidebar"}, {"text": "Matplotlib charts use dark background colors matching Streamlit", "passed": false, "evidence": "File uses Plotly charts (px.line, px.box) instead of Matplotlib. No dark background facecolor or ax.set_facecolor() calls found. Plotly's default theme is light, not Streamlit's dark theme"}, {"text": "Uses width='stretch' not deprecated use_container_width=True", "passed": false, "evidence": "Line 122: st.plotly_chart(fig_temp, use_container_width=True) - uses deprecated use_container_width=True instead of width='stretch'"}, {"text": "Calls plt.close() after st.pyplot()", "passed": false, "evidence": "File uses Plotly (st.plotly_chart) not Matplotlib (st.pyplot). No plt.close() calls found anywhere in the file"}, {"text": "Has a docstring at the top with streamlit run command", "passed": false, "evidence": "No docstring at the top. File starts with imports at line 1, no multi-line docstring with run command"}, {"text": "Uses Path(__file__).parent for data file paths", "passed": false, "evidence": "Lines 27-30: Uses hardcoded string paths and os.path.exists() with absolute paths, not Path(__file__).parent"}]}}, {"id": "eval-3-waveform-viz-with_skill", "prompt": "Create a streamlit dashboard that reads my devices/sofucor_fan.yaml and lets me visualize different command waveforms with adjustable timing parameters.", "eval_id": 3, "outputs": [{"name": "README.md", "type": "text", "content": "# RF Waveform Explorer \u2014 Streamlit App\n\n## What it does\n\nInteractive dashboard for visualizing OOK (On-Off Keying) RF waveforms from the Sofucor ceiling fan device profile. Load the YAML, pick a command and unit, adjust timing parameters with sliders, and see the resulting waveform update in real time.\n\n## Features\n\n- **Load device YAML** \u2014 reads `sofucor_fan.yaml` with all timing and command definitions\n- **Command selector** \u2014 dropdown to pick any command (light, off, speed1, speed2, speed3)\n- **Unit selector** \u2014 choose which fan unit (bedroom, living_room) for address bits\n- **Adjustable timing sliders** \u2014 tweak sync, pulse, and gap durations in microseconds\n- **Live waveform plot** \u2014 matplotlib plot styled to match Streamlit's dark theme\n- **Info panels** \u2014 shows address+command bits, timing summary, total duration\n\n## How to run\n\n```bash\nstreamlit run waveform_explorer.py\n```\n\nThe app will open in your browser at `http://localhost:8501/`.\n\n## File structure\n\n- `waveform_explorer.py` \u2014 single-file Streamlit app\n  - Uses `@st.cache_data` to load YAML once\n  - Waveform generation: builds (duration, level) tuples for OOK modulation\n  - Time-series conversion: samples at 1 MHz for plotting\n  - Matplotlib styling: dark theme with Streamlit accent colors\n\n## Requirements\n\nAll standard and tested:\n- `streamlit` \u2014 app framework\n- `numpy` \u2014 array math for time series\n- `matplotlib` \u2014 plotting with full control\n- `pyyaml` \u2014 load device YAML\n- `pathlib` \u2014 locate sofucor_fan.yaml (stdlib)\n\n## How it encodes waveforms\n\nEach packet: `[address 16 bits][command 16 bits]` = 32 bits total\n\nFor each repetition:\n1. **Sync HIGH** \u2192 `sync_us` microseconds\n2. **Sync gap LOW** \u2192 `sync_gap_us` microseconds\n3. For each bit:\n   - **Pulse HIGH** \u2192 `pulse_us` microseconds\n   - **Gap LOW** \u2192 `zero_gap_us` (if bit=0) or `one_gap_us` (if bit=1)\n\nThis is Pulse Distance Modulation (PDM): fixed-width pulses with variable gaps.\n\n## Example output\n\nTotal duration for 20 repeats of a 32-bit packet (~8000 \u00b5s sync + payload):\n- Single repeat \u2248 ~62 ms\n- 20 repeats \u2248 ~1.24 seconds\n\nThe waveform plot shows the full sequence with address + command bits, making it easy to verify protocol details or debug timing issues.\n"}, {"name": "waveform_explorer.py", "type": "text", "content": "\"\"\"\nRF Waveform Explorer \u2014 Visualize OOK pulse sequences with adjustable timing parameters.\n\nLoad a device YAML profile, select a command, adjust timing sliders, and see the\nRF waveform update in real time.\n\nRun with:  streamlit run waveform_explorer.py\n\"\"\"\n\nimport streamlit as st\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport yaml\nfrom pathlib import Path\n\n\n# ============================================================================\n# Page config (must be first st call)\n# ============================================================================\nst.set_page_config(page_title=\"RF Waveform Explorer\", layout=\"wide\")\n\n\n# ============================================================================\n# Data loading and caching\n# ============================================================================\n@st.cache_data\ndef load_device_yaml(yaml_path):\n    \"\"\"Load and parse the device YAML profile.\"\"\"\n    with open(yaml_path, 'r') as f:\n        return yaml.safe_load(f)\n\n\ndef get_yaml_path():\n    \"\"\"Locate the sofucor_fan.yaml relative to this script's directory.\"\"\"\n    script_dir = Path(__file__).parent\n    # Go up to the RF root: .../outputs -> .../with_skill -> .../eval-3-waveform-viz -> ... -> radiofrequency\n    # For this test, we'll construct the path based on the working directory\n    # Try multiple possible paths\n    candidates = [\n        Path(\"/sessions/friendly-relaxed-goodall/mnt/radiofrequency/devices/sofucor_fan.yaml\"),\n        script_dir.parent.parent.parent.parent.parent / \"devices\" / \"sofucor_fan.yaml\",\n    ]\n    for path in candidates:\n        if path.exists():\n            return path\n    # If not found, raise error with helpful message\n    raise FileNotFoundError(\n        f\"Could not find sofucor_fan.yaml. Tried: {candidates}\"\n    )\n\n\n# ============================================================================\n# Waveform generation\n# ============================================================================\ndef generate_waveform(address_bits, command_bits, timing, repeat_count=1):\n    \"\"\"\n    Generate OOK waveform as a series of (duration_us, level) tuples.\n\n    Packet structure:\n      [sync HIGH] [sync_gap LOW] [32 bits of data] (repeat)\n\n    Each bit is encoded as:\n      [pulse HIGH] [zero_gap or one_gap LOW]\n\n    Returns:\n      List of (duration_us, level) tuples where level is 1 (HIGH) or 0 (LOW)\n    \"\"\"\n    waveform = []\n\n    # Concatenate address + command (32 bits total)\n    bit_string = address_bits + command_bits\n\n    # Repeat the packet N times\n    for rep in range(repeat_count):\n        # Sync pulse at the start of each repetition\n        waveform.append((timing['sync_us'], 1))\n        waveform.append((timing['sync_gap_us'], 0))\n\n        # Data bits\n        for bit in bit_string:\n            # Carrier HIGH\n            waveform.append((timing['pulse_us'], 1))\n            # LOW gap depends on bit value\n            gap = timing['one_gap_us'] if bit == '1' else timing['zero_gap_us']\n            waveform.append((gap, 0))\n\n    return waveform\n\n\ndef waveform_to_time_series(waveform, sample_rate=1e6):\n    \"\"\"\n    Convert a waveform (list of duration/level tuples) to a time series.\n\n    Args:\n        waveform: List of (duration_us, level) tuples\n        sample_rate: Samples per second (default 1 MHz = 1 sample/microsecond)\n\n    Returns:\n        (time_array, signal_array) suitable for plotting\n    \"\"\"\n    time_us = []\n    signal = []\n    current_time = 0.0\n\n    for duration_us, level in waveform:\n        # Calculate number of samples for this segment\n        num_samples = max(1, int(duration_us))\n        segment_times = np.linspace(current_time, current_time + duration_us, num_samples)\n        time_us.extend(segment_times)\n        signal.extend([level] * num_samples)\n        current_time += duration_us\n\n    return np.array(time_us), np.array(signal)\n\n\n# ============================================================================\n# Styling constants for dark theme\n# ============================================================================\nDARK_BG = \"#0e1117\"\nPANEL_BG = \"#161b22\"\nWHITE = \"#e6edf3\"\nMUTED = \"#8b949e\"\nACCENT = \"#58a6ff\"\n\n\n# ============================================================================\n# Main app\n# ============================================================================\nst.title(\"RF Waveform Explorer\")\nst.write(\n    \"Load a device YAML profile, pick a command, adjust timing parameters, \"\n    \"and visualize the resulting OOK waveform in real time.\"\n)\n\n# Sidebar: Load YAML and get user selections\nst.sidebar.title(\"Controls\")\n\ntry:\n    yaml_path = get_yaml_path()\n    device = load_device_yaml(yaml_path)\nexcept FileNotFoundError as e:\n    st.error(f\"Error loading YAML: {e}\")\n    st.stop()\n\n# Display basic device info\nst.sidebar.markdown(\"### Device Info\")\nst.sidebar.write(f\"**Frequency:** {device.get('frequency_mhz')} MHz\")\nst.sidebar.write(f\"**Encoding:** {device.get('encoding')}\")\n\n# Select command\nst.sidebar.markdown(\"### Select Command\")\ncommand_names = list(device.get('commands', {}).keys())\nif not command_names:\n    st.error(\"No commands found in YAML\")\n    st.stop()\n\nselected_command = st.sidebar.selectbox(\"Command\", command_names)\ncommand_bits = device['commands'][selected_command]\n\n# Get the first unit's address for this demo (or allow selection)\nst.sidebar.markdown(\"### Select Unit\")\nunit_names = list(device.get('units', {}).keys())\nif not unit_names:\n    st.error(\"No units found in YAML\")\n    st.stop()\n\nselected_unit = st.sidebar.selectbox(\"Unit\", unit_names)\naddress_bits = device['units'][selected_unit]['address']\n\n# Timing parameter sliders\nst.sidebar.markdown(\"### Timing (microseconds)\")\ntiming_controls = {}\ntiming_defaults = device.get('timing', {})\n\ntiming_controls['sync_us'] = st.sidebar.slider(\n    \"Sync HIGH\",\n    min_value=1000,\n    max_value=20000,\n    value=int(timing_defaults.get('sync_us', 8000)),\n    step=100,\n)\n\ntiming_controls['sync_gap_us'] = st.sidebar.slider(\n    \"Sync Gap LOW\",\n    min_value=100,\n    max_value=2000,\n    value=int(timing_defaults.get('sync_gap_us', 670)),\n    step=10,\n)\n\ntiming_controls['pulse_us'] = st.sidebar.slider(\n    \"Pulse HIGH\",\n    min_value=100,\n    max_value=1000,\n    value=int(timing_defaults.get('pulse_us', 400)),\n    step=10,\n)\n\ntiming_controls['zero_gap_us'] = st.sidebar.slider(\n    \"Zero Gap LOW\",\n    min_value=100,\n    max_value=2000,\n    value=int(timing_defaults.get('zero_gap_us', 670)),\n    step=10,\n)\n\ntiming_controls['one_gap_us'] = st.sidebar.slider(\n    \"One Gap LOW\",\n    min_value=500,\n    max_value=3000,\n    value=int(timing_defaults.get('one_gap_us', 1800)),\n    step=10,\n)\n\nrepeat_count = st.sidebar.slider(\n    \"Repeats\",\n    min_value=1,\n    max_value=50,\n    value=int(timing_defaults.get('repeat_count', 20)),\n    step=1,\n)\n\n# ============================================================================\n# Generate and display waveform\n# ============================================================================\nst.markdown(\"### Waveform Visualization\")\n\n# Generate the waveform\nwaveform = generate_waveform(address_bits, command_bits, timing_controls, repeat_count)\n\n# Convert to time series\ntime_us, signal = waveform_to_time_series(waveform, sample_rate=1e6)\n\n# Plot with matplotlib, styled for dark theme\nfig, ax = plt.subplots(figsize=(14, 6), facecolor=DARK_BG)\nax.set_facecolor(PANEL_BG)\nax.plot(time_us, signal, color=ACCENT, linewidth=2, label=\"RF Carrier\")\nax.fill_between(time_us, 0, signal, alpha=0.2, color=ACCENT)\n\nax.set_xlabel(\"Time (\u00b5s)\", color=WHITE, fontsize=11)\nax.set_ylabel(\"Level\", color=WHITE, fontsize=11)\nax.set_title(\n    f\"OOK Waveform: {selected_unit.title()} \u2014 {selected_command} ({repeat_count}x repeat)\",\n    color=WHITE,\n    fontsize=13,\n    pad=15,\n)\nax.set_ylim(-0.1, 1.1)\nax.set_yticks([0, 1])\nax.set_yticklabels([\"LOW\", \"HIGH\"], color=MUTED)\nax.tick_params(colors=MUTED, labelsize=10)\nax.spines[\"top\"].set_visible(False)\nax.spines[\"right\"].set_visible(False)\nax.spines[\"bottom\"].set_color(MUTED)\nax.spines[\"left\"].set_color(MUTED)\nax.legend(loc=\"upper right\", frameon=False, labelcolor=WHITE)\nax.grid(True, alpha=0.1, color=MUTED, linestyle=\"--\")\n\nst.pyplot(fig, width=\"stretch\")\nplt.close(fig)\n\n# ============================================================================\n# Info panels\n# ============================================================================\ncol1, col2 = st.columns(2)\n\nwith col1:\n    st.markdown(\"#### Command Details\")\n    st.code(\n        f\"\"\"\nAddress: {address_bits} (16 bits)\nCommand: {command_bits} (16 bits)\nPacket:  {address_bits}{command_bits} (32 bits)\n        \"\"\",\n        language=\"text\",\n    )\n\nwith col2:\n    st.markdown(\"#### Timing Summary\")\n    total_us = sum(d for d, _ in waveform)\n    st.metric(\"Total Duration (\u00b5s)\", f\"{total_us:,.0f}\")\n    st.metric(\"Bit Time (\u00b5s)\", timing_controls['pulse_us'] + timing_controls['zero_gap_us'])\n    st.metric(\"Total Samples\", len(time_us))\n\n# Expander for raw waveform data\nwith st.expander(\"Show raw waveform data\"):\n    st.write(\"(duration_us, level) tuples \u2014 first 20 segments:\")\n    for i, (duration, level) in enumerate(waveform[:20]):\n        level_name = \"HIGH\" if level == 1 else \"LOW\"\n        st.write(f\"{i}: {duration:.0f} \u00b5s {level_name}\")\n    if len(waveform) > 20:\n        st.write(f\"... and {len(waveform) - 20} more segments\")\n"}], "grading": {"eval_id": 3, "run_type": "with_skill", "expectations": [{"text": "App uses @st.cache_data for YAML loading", "passed": true, "evidence": "Line 26: @st.cache_data decorator on load_device_yaml() function that loads YAML file"}, {"text": "Timing sliders and command selector are in the sidebar", "passed": true, "evidence": "Lines 136-221: All controls (command selectbox line 157, unit selectbox line 167, and timing sliders lines 175-213) use st.sidebar"}, {"text": "Matplotlib charts use dark background colors matching Streamlit", "passed": true, "evidence": "Lines 119-123: DARK_BG='#0e1117', PANEL_BG='#161b22', WHITE='#e6edf3', MUTED='#8b949e' color constants; Line 235: facecolor=DARK_BG; Line 236: ax.set_facecolor(PANEL_BG)"}, {"text": "Uses width='stretch' not deprecated use_container_width=True", "passed": true, "evidence": "Line 259: st.pyplot(fig, width='stretch')"}, {"text": "Calls plt.close() after st.pyplot()", "passed": true, "evidence": "Line 260: plt.close(fig) called immediately after st.pyplot()"}, {"text": "Loads and parses the actual sofucor_fan.yaml device profile", "passed": true, "evidence": "Lines 26-30: load_device_yaml() uses yaml.safe_load(); Lines 33-49: get_yaml_path() locates sofucor_fan.yaml with fallback candidates; Line 140: load_device_yaml(yaml_path) called to load actual file"}, {"text": "Waveform generation correctly implements OOK pulse-distance modulation", "passed": true, "evidence": "Lines 55-87: generate_waveform() creates waveform tuples with (duration, level); Lines 78-85: bits encoded as pulse HIGH followed by gap LOW where gap duration depends on bit value ('0'\u2192zero_gap_us, '1'\u2192one_gap_us), implementing pulse-distance modulation correctly"}]}}, {"id": "eval-3-waveform-viz-without_skill", "prompt": "Create a streamlit dashboard that reads my devices/sofucor_fan.yaml and lets me visualize different command waveforms with adjustable timing parameters.", "eval_id": 3, "outputs": [{"name": "README.md", "type": "text", "content": "# RF Waveform Explorer \u2014 Streamlit Dashboard\n\nA real-time visualization tool for Sofucor ceiling fan RF signals with live timing parameter adjustment.\n\n## Features\n\n- **Live Waveform Rendering:** Generates OOK-PDM waveforms on-the-fly as you adjust parameters\n- **Timing Sliders:** Adjust pulse durations, gap widths, sync timing, and repetition count\n- **Command Selection:** Pick any command from the YAML profile (light, off, speed1, speed2, speed3)\n- **Unit Selection:** Choose which remote/fan unit to visualize (determines address bits)\n- **Packet Details:** See address bits, command bits, and total transmission duration\n- **Protocol Guide:** Expandable explanation of OOK-PDM modulation and packet structure\n\n## How It Works\n\nThe app reads `/sessions/friendly-relaxed-goodall/mnt/radiofrequency/devices/sofucor_fan.yaml` and:\n\n1. Extracts timing parameters (pulse_us, zero_gap_us, one_gap_us, sync_us, sync_gap_us)\n2. Loads commands and unit addresses from the YAML\n3. Generates OOK waveform samples based on selected command and current slider values\n4. Renders the waveform as a matplotlib plot showing HIGH/LOW transitions\n5. Updates reactively as you move any slider or change selections\n\n## Protocol Overview\n\n**OOK Pulse Distance Modulation (OOK_PDM)**\n- Carrier pulse: constant duration (`pulse_us`)\n- Information encoding: gap duration\n  - Bit 0 \u2192 short gap (`zero_gap_us`)\n  - Bit 1 \u2192 long gap (`one_gap_us`)\n\n**Packet Structure**\n```\n[SYNC HIGH pulse] [SYNC LOW gap] [32 data bits: 16 address + 16 command] \u00d7 repeat_count\n```\n\nEach data bit is: `[HIGH pulse] [LOW gap based on bit value]`\n\n## Running the App\n\n```bash\nstreamlit run waveform_explorer.py\n```\n\nThen open http://localhost:8501 in your browser.\n\n## Parameters Explained\n\n| Parameter | Purpose | Default |\n|-----------|---------|---------|\n| pulse_us | Duration of HIGH carrier for each bit | 400 \u00b5s |\n| zero_gap_us | LOW gap duration when bit=0 | 670 \u00b5s |\n| one_gap_us | LOW gap duration when bit=1 | 1800 \u00b5s |\n| sync_us | Duration of initial SYNC HIGH pulse | 8000 \u00b5s |\n| sync_gap_us | LOW gap after SYNC before data bits | 670 \u00b5s |\n| repeat_count | How many times to repeat the full packet | 5 (max 50) |\n\n## Files\n\n- `waveform_explorer.py` \u2014 Main Streamlit application\n- `README.md` \u2014 This file\n\n## Dependencies\n\n- streamlit\n- numpy\n- matplotlib\n- pyyaml\n- pathlib (stdlib)\n\nAll dependencies verified on smoke test.\n"}, {"name": "waveform_explorer.py", "type": "text", "content": "\"\"\"\nStreamlit Dashboard for RF Waveform Visualization\nReads sofucor_fan.yaml and visualizes OOK waveforms with live timing adjustment\n\"\"\"\n\nimport streamlit as st\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport yaml\nfrom pathlib import Path\n\n\n@st.cache_data\ndef load_device_profile(yaml_path):\n    \"\"\"Load and parse the YAML device profile\"\"\"\n    with open(yaml_path, 'r') as f:\n        config = yaml.safe_load(f)\n    return config\n\n\ndef generate_waveform(\n    command_bits,\n    address_bits,\n    pulse_us,\n    zero_gap_us,\n    one_gap_us,\n    sync_us,\n    sync_gap_us,\n    repeat_count=1,\n    sample_rate_hz=100000\n):\n    \"\"\"\n    Generate OOK_PDM waveform samples.\n\n    Protocol:\n    - Start each repetition with SYNC: HIGH for sync_us, then LOW for sync_gap_us\n    - For each bit in packet (address + command):\n      - HIGH pulse for pulse_us\n      - LOW gap: zero_gap_us for bit=0, one_gap_us for bit=1\n\n    Returns:\n        time_array (\u00b5s), samples (0=LOW, 1=HIGH)\n    \"\"\"\n    samples = []\n    time_points = []\n    current_time = 0\n\n    # Combine address and command\n    full_packet = address_bits + command_bits\n\n    for rep in range(repeat_count):\n        # Sync HIGH pulse\n        num_samples = int(sync_us * sample_rate_hz / 1e6)\n        samples.extend([1] * num_samples)\n        time_points.extend([current_time + i / sample_rate_hz * 1e6 for i in range(num_samples)])\n        current_time += sync_us\n\n        # Sync gap LOW\n        num_samples = int(sync_gap_us * sample_rate_hz / 1e6)\n        samples.extend([0] * num_samples)\n        time_points.extend([current_time + i / sample_rate_hz * 1e6 for i in range(num_samples)])\n        current_time += sync_gap_us\n\n        # Data bits\n        for bit_char in full_packet:\n            bit = int(bit_char)\n\n            # Pulse HIGH\n            num_samples = int(pulse_us * sample_rate_hz / 1e6)\n            samples.extend([1] * num_samples)\n            time_points.extend([current_time + i / sample_rate_hz * 1e6 for i in range(num_samples)])\n            current_time += pulse_us\n\n            # Gap LOW (duration depends on bit value)\n            gap = one_gap_us if bit == 1 else zero_gap_us\n            num_samples = int(gap * sample_rate_hz / 1e6)\n            samples.extend([0] * num_samples)\n            time_points.extend([current_time + i / sample_rate_hz * 1e6 for i in range(num_samples)])\n            current_time += gap\n\n    return np.array(time_points), np.array(samples)\n\n\ndef plot_waveform(time_array, samples, title=\"OOK Waveform\"):\n    \"\"\"Create matplotlib figure for waveform visualization\"\"\"\n    fig, ax = plt.subplots(figsize=(14, 4))\n\n    ax.plot(time_array, samples, linewidth=1.5, color='#1f77b4', drawstyle='steps-post')\n    ax.fill_between(time_array, 0, samples, alpha=0.3, color='#1f77b4', step='post')\n\n    ax.set_xlabel('Time (\u00b5s)', fontsize=11)\n    ax.set_ylabel('Signal Level', fontsize=11)\n    ax.set_title(title, fontsize=13, fontweight='bold')\n    ax.set_ylim(-0.1, 1.2)\n    ax.grid(True, alpha=0.3, linestyle='--')\n    ax.set_yticks([0, 1])\n    ax.set_yticklabels(['LOW', 'HIGH'])\n\n    return fig\n\n\ndef main():\n    st.set_page_config(\n        page_title='RF Waveform Explorer',\n        page_icon='\ud83d\udce1',\n        layout='wide',\n        initial_sidebar_state='expanded'\n    )\n\n    st.title('\ud83d\udce1 RF Waveform Explorer')\n    st.markdown('Visualize OOK-PDM waveforms from your RF device profile with live parameter tuning')\n\n    # Locate the YAML file\n    yaml_path = Path('/sessions/friendly-relaxed-goodall/mnt/radiofrequency/devices/sofucor_fan.yaml')\n\n    if not yaml_path.exists():\n        st.error(f'Device profile not found at {yaml_path}')\n        return\n\n    # Load device profile\n    config = load_device_profile(str(yaml_path))\n\n    st.sidebar.markdown('## Device Info')\n    st.sidebar.write(f\"**Frequency:** {config['frequency_mhz']} MHz\")\n    st.sidebar.write(f\"**Encoding:** {config['encoding']}\")\n\n    # Timing controls in sidebar\n    st.sidebar.markdown('## Timing Parameters (\u00b5s)')\n\n    timing = config['timing']\n\n    pulse_us = st.sidebar.slider(\n        'Pulse Duration (pulse_us)',\n        min_value=100,\n        max_value=1000,\n        value=timing['pulse_us'],\n        step=10,\n        help='Duration of HIGH signal for each bit carrier'\n    )\n\n    zero_gap_us = st.sidebar.slider(\n        'Zero Gap Duration (zero_gap_us)',\n        min_value=100,\n        max_value=2000,\n        value=timing['zero_gap_us'],\n        step=10,\n        help='Duration of LOW gap after pulse when bit=0'\n    )\n\n    one_gap_us = st.sidebar.slider(\n        'One Gap Duration (one_gap_us)',\n        min_value=500,\n        max_value=3000,\n        value=timing['one_gap_us'],\n        step=10,\n        help='Duration of LOW gap after pulse when bit=1'\n    )\n\n    sync_us = st.sidebar.slider(\n        'Sync Pulse Duration (sync_us)',\n        min_value=2000,\n        max_value=15000,\n        value=timing['sync_us'],\n        step=100,\n        help='Duration of initial SYNC HIGH pulse'\n    )\n\n    sync_gap_us = st.sidebar.slider(\n        'Sync Gap Duration (sync_gap_us)',\n        min_value=100,\n        max_value=2000,\n        value=timing['sync_gap_us'],\n        step=10,\n        help='Duration of LOW gap between sync and first data bit'\n    )\n\n    repeat_count = st.sidebar.slider(\n        'Repetition Count',\n        min_value=1,\n        max_value=50,\n        value=min(5, timing['repeat_count']),\n        step=1,\n        help='Number of times to repeat the full packet'\n    )\n\n    # Command and unit selection\n    col1, col2 = st.columns(2)\n\n    with col1:\n        selected_command = st.selectbox(\n            'Select Command',\n            list(config['commands'].keys()),\n            help='Choose a command to visualize'\n        )\n\n    with col2:\n        selected_unit = st.selectbox(\n            'Select Unit',\n            list(config['units'].keys()),\n            help='Choose which remote/unit to use (determines address bits)'\n        )\n\n    # Get bits for selected command and unit\n    command_bits = config['commands'][selected_command]\n    address_bits = config['units'][selected_unit]['address']\n\n    st.markdown('---')\n    st.markdown('## Waveform Visualization')\n\n    # Generate and display waveform\n    time_array, samples = generate_waveform(\n        command_bits=command_bits,\n        address_bits=address_bits,\n        pulse_us=pulse_us,\n        zero_gap_us=zero_gap_us,\n        one_gap_us=one_gap_us,\n        sync_us=sync_us,\n        sync_gap_us=sync_gap_us,\n        repeat_count=repeat_count,\n        sample_rate_hz=100000\n    )\n\n    fig = plot_waveform(\n        time_array,\n        samples,\n        title=f\"Command: {selected_command} | Unit: {selected_unit} | Repetitions: {repeat_count}\"\n    )\n    st.pyplot(fig, use_container_width=True)\n\n    # Display packet information\n    st.markdown('## Packet Details')\n\n    col1, col2, col3 = st.columns(3)\n\n    with col1:\n        st.metric('Address Bits', address_bits)\n\n    with col2:\n        st.metric('Command Bits', command_bits)\n\n    with col3:\n        total_duration_ms = (time_array[-1] - time_array[0]) / 1000\n        st.metric('Total Duration', f'{total_duration_ms:.2f} ms')\n\n    # Show timing summary table\n    st.markdown('### Timing Summary')\n    timing_data = {\n        'Parameter': [\n            'Sync Pulse', 'Sync Gap', 'Data Pulse', 'Zero Gap', 'One Gap'\n        ],\n        'Current Value (\u00b5s)': [\n            sync_us, sync_gap_us, pulse_us, zero_gap_us, one_gap_us\n        ],\n        'Device Profile (\u00b5s)': [\n            timing['sync_us'], timing['sync_gap_us'], timing['pulse_us'],\n            timing['zero_gap_us'], timing['one_gap_us']\n        ]\n    }\n    st.table(timing_data)\n\n    # Protocol explanation\n    with st.expander('\ud83d\udcda Protocol Explanation'):\n        st.markdown(\"\"\"\n        ### OOK Pulse Distance Modulation (OOK_PDM)\n\n        This Sofucor fan uses **On-Off Keying with Pulse Distance Modulation**:\n\n        - **Pulse:** HIGH signal is always the same duration (`pulse_us`)\n        - **Distance:** Information is encoded in the LOW gap duration:\n          - **Bit 0:** short LOW gap (`zero_gap_us`)\n          - **Bit 1:** long LOW gap (`one_gap_us`)\n\n        #### Packet Structure\n        1. **Sync Burst:** Long HIGH pulse (`sync_us`) followed by LOW gap (`sync_gap_us`)\n        2. **Address Bits:** 16 bits identifying the remote/unit (unique per physical remote)\n        3. **Command Bits:** 16 bits specifying the action (speed, light, off, etc.)\n\n        #### Example Timeline\n        - 0\u20138000 \u00b5s: SYNC HIGH\n        - 8000\u20138670 \u00b5s: SYNC LOW gap\n        - 8670\u20139070 \u00b5s: Bit 0 HIGH pulse\n        - 9070\u20139740 \u00b5s: Bit 0 LOW gap (short, for bit=0)\n        - 9740\u201310140 \u00b5s: Bit 1 HIGH pulse\n        - 10140\u201311940 \u00b5s: Bit 1 LOW gap (long, for bit=1)\n        - ... and so on for remaining 30 bits\n\n        #### Why This Works\n        The receiver measures the gap duration and thresholds it:\n        - Gap < threshold \u2192 decoded as 0\n        - Gap \u2265 threshold \u2192 decoded as 1\n        \"\"\")\n\n\nif __name__ == '__main__':\n    main()\n"}], "grading": {"eval_id": 3, "run_type": "without_skill", "expectations": [{"text": "App uses @st.cache_data for YAML loading", "passed": true, "evidence": "Line 13: @st.cache_data decorator on load_device_profile() function"}, {"text": "Timing sliders and command selector are in the sidebar", "passed": false, "evidence": "Lines 132-184: Timing sliders use st.sidebar, but lines 187-201: Command and unit selection use st.columns/st.selectbox (main area), not sidebar"}, {"text": "Matplotlib charts use dark background colors matching Streamlit", "passed": false, "evidence": "Line 86: matplotlib fig created with default settings; Line 88: plot uses '#1f77b4' (light blue) color without setting dark facecolor or ax.set_facecolor(). No dark theme styling applied"}, {"text": "Uses width='stretch' not deprecated use_container_width=True", "passed": false, "evidence": "Line 228: st.pyplot(fig, use_container_width=True) uses deprecated use_container_width=True instead of width='stretch'"}, {"text": "Calls plt.close() after st.pyplot()", "passed": false, "evidence": "File does not call plt.close() anywhere after st.pyplot() at line 228"}, {"text": "Loads and parses the actual sofucor_fan.yaml device profile", "passed": true, "evidence": "Line 114: yaml_path = Path('/sessions/.../sofucor_fan.yaml') hardcoded; Line 121: load_device_profile(str(yaml_path)) called; Lines 124-125: accesses config['frequency_mhz'] and config['encoding']"}, {"text": "Waveform generation correctly implements OOK pulse-distance modulation", "passed": true, "evidence": "Lines 21-81: generate_waveform() creates samples with pulse followed by gap; Lines 65-79: bits encoded correctly with 'if bit == 1' checking to select one_gap_us vs zero_gap_us, implementing pulse-distance modulation"}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "streamlit", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-04-05T19:02:53Z", "evals_run": [], "runs_per_configuration": 3}, "runs": [], "run_summary": {"delta": {"pass_rate": "+0.00", "time_seconds": "+0.0", "tokens": "+0"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
